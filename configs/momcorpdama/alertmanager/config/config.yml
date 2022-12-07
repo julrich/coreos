@@ -1,0 +1,61 @@
+global:
+  smtp_smarthost: 'smtp.sendgrid.net:25'
+  smtp_from: 'rm Alertmanager <infrastructure@ruhmesmeile.com>'
+  smtp_auth_username: 'apikey'
+  smtp_auth_password: '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'
+
+route:
+  receiver: 'mail'
+  repeat_interval: 4h
+  group_interval: 5m
+  group_wait: 1m
+  group_by: [name, instance]
+  routes:
+    - receiver: 'mail'
+      continue: true
+    - receiver: 'slack'
+      continue: true
+    - receiver: 'team-bonn'
+      continue: true
+      match:
+        team: bonn
+    - receiver: 'team-cologne'
+      continue: true
+      match:
+        team: cologne
+
+receivers:
+  - name: 'mail'
+    email_configs:
+      - to: 'infrastructure@ruhmesmeile.com'
+        send_resolved: true
+  - name: 'slack'
+    slack_configs:
+      - channel: '#infrastructure-alerts'
+        icon_url: 'https://secure.gravatar.com/avatar/8018fa9dc1d71feac03c6ba6cb2bf94f.jpg?s=256&d=mm'
+        send_resolved: true
+        api_url: https://hooks.slack.com/services/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
+        title: '{{ template "custom_title" .  }}'
+        text: '{{ template "custom_slack_message" .  }}'
+  - name: 'team-bonn'
+    webhook_configs:
+      - url: 'http://sachet.services.ruhmesmeile.local:9876/alert'
+    slack_configs:
+      - channel: '#typo3-team-bonn'
+        icon_url: 'https://secure.gravatar.com/avatar/8018fa9dc1d71feac03c6ba6cb2bf94f.jpg?s=256&d=mm'
+        send_resolved: true
+        api_url: https://hooks.slack.com/services/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
+        title: '{{ template "custom_title" .  }}'
+        text: '{{ template "custom_slack_message" .  }}'
+  - name: 'team-cologne'
+    webhook_configs:
+      - url: 'http://sachet.services.ruhmesmeile.local:9876/alert'
+    slack_configs:
+      - channel: '#typo3-team-köln'
+        icon_url: 'https://secure.gravatar.com/avatar/8018fa9dc1d71feac03c6ba6cb2bf94f.jpg?s=256&d=mm'
+        send_resolved: true
+        api_url: https://hooks.slack.com/services/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 
+        title: '{{ template "custom_title" .  }}'
+        text: '{{ template "custom_slack_message" .  }}'
+templates:
+  - /alertmanager/notifications.tmpl

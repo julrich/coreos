@@ -1,0 +1,60 @@
+[Unit]
+Description=Container for static dev webpages
+Documentation=https://github.com/ruhmesmeile/php-nginx-static
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+ExecStartPre=-/usr/bin/docker kill 'static-dev-%i'
+ExecStartPre=-/usr/bin/docker rm 'static-dev-%i'
+ExecStartPre=/usr/bin/docker pull ruhmesmeile/php-nginx-static:latest
+
+ExecStartPre=/bin/bash -c '\
+  echo "[SYSTEMD] Getting current project sources"; \
+  rm -rf /srv/source/static/dev/%i/*; \
+  while read -r fullfile ; do \
+    echo "[SYSTEMD] Extracting file: $$fullfile"; \
+    mkdir -p /srv/source/static/dev/%i/; \
+    tar -zxf "$$fullfile" -C /srv/source/static/dev/%i/; \
+  done < <(find /srv/storage/artifacts/static/dev/%i -path \'*.sources.tar.gz\'); \
+  ( \
+      cd /srv/source/static/dev/%i; \
+      if [ ! -d web ]; then \
+        rm -rf /tmp/web/%i; \
+        mkdir -p /tmp/web/%i; \
+        shopt -s dotglob; \
+        mv * /tmp/web/%i/ || true; \
+        shopt -u dotglob; \
+        mv /tmp/web/%i /srv/source/static/dev/%i/web; \
+      fi \
+  );'
+
+ExecStart=/usr/bin/docker run \
+  --name "static-dev-%i" --rm \
+  --env "SERVICE_80_IGNORE=true" \
+  --env "SERVICE_443_NAME=static-dev" \
+  --env "SERVICE_ID=%i" \
+  --env "VIRTUAL_HOST=%i.static.ruhmesmeile.dev" \
+  --env "LOCATION_HOST=%i.static.ruhmesmeile.dev" \
+  --env "LETSENCRYPT_HOST=%i.static.ruhmesmeile.dev" \
+  --env "LETSENCRYPT_EMAIL=jonas.ulrich@ruhmesmeile.com" \
+  --env "APPLICATION_PATH=/app" \
+  --env "WEB_DOCUMENT_ROOT=/app/web" \
+  --env "WEB_DOCUMENT_INDEX=index.html" \
+  --env "WEB_ALIAS_DOMAIN=%i.static.ruhmesmeile.dev" \
+  --env "SMTP_HOST=%i.static-dev-mail.services.ruhmesmeile.local" \
+  --env "SMTP_PORT=1025" \
+  --label "container_group=static" \
+  --volume "/srv/source/static/dev/%i:/app" \
+  ruhmesmeile/php-nginx-static:latest
+
+ExecStartPost=-/bin/bash -c '\
+ echo "%i"\':$$apr1$$GvBzdmf.$$Eld/pvDX6FR8zkxNeXxlZ.\' > /srv/storage/config/nginx/data/htpasswd/%i.static.ruhmesmeile.dev;'
+
+[X-Fleet]
+MachineMetadata=role=vds

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<configuration>
+<buildWorkingDirectory>/root/bamboo-agent-home/xml-data/build-dir</buildWorkingDirectory>
+<agentUuid>0ff9190c-63f0-4c9a-9b33-8d887f3e9186</agentUuid>
+<agentDefinition>
+<id>36143108</id>
+<name>28866165e769</name>
+<description>Remote agent on host 28866165e769</description>
+</agentDefinition>
+</configuration>

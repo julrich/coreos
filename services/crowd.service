@@ -1,0 +1,51 @@
+[Unit]
+Description=Atlassian Crowd container
+Documentation=https://github.com/ruhmesmeile/crowd https://bitbucket.org/atlassianlabs/atlassian-docker/src/ee4a3434b1443ed4d9cfbf721ba7d4556da8c005/crowd/?at=master
+
+Requires=docker.service
+Requires=postgresql94.service
+
+After=docker.service
+After=postgresql94.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+TimeoutSec=300s
+
+ExecStartPre=/usr/bin/docker pull ruhmesmeile/crowd:3.5.0
+ExecStartPre=-/usr/bin/docker kill crowd
+ExecStartPre=-/usr/bin/docker rm crowd -v
+ExecStart=/usr/bin/docker run \
+  --name "crowd" \
+  --env "SERVICE_NAME=crowd" \
+  --env "SERVICE_ID=%H" \
+  --env "VIRTUAL_HOST=crowd.ruhmesmeile.tools,crowd3.ruhmesmeile.tools" \
+  --env "VIRTUAL_PORT=8095" \
+  --env "LETSENCRYPT_HOST=crowd.ruhmesmeile.tools,crowd3.ruhmesmeile.tools" \
+  --env "LETSENCRYPT_EMAIL=jonas.ulrich@ruhmesmeile.com" \
+  --env "CROWD_URL=https://crowd.ruhmesmeile.tools/crowd" \
+  --env "LOGIN_BASE_URL=https://crowd.ruhmesmeile.tools" \
+  --env "CROWD_PROXY_NAME=crowd.ruhmesmeile.tools" \
+  --env "CROWD_PROXY_PORT=443" \
+  --env "CROWD_PROXY_SCHEME=https" \
+  --env "CROWD_PROXY_SECURE=true" \
+  --env "CROWD_CONTEXT=crowd" \
+  --env "CROWDID_CONTEXT=id" \
+  --env "OPENID_CLIENT_CONTEXT=openid" \
+  --env "DEMO_CONTEXT=" \
+  --env "SPLASH_CONTEXT=" \
+  --env "CROWDDB_URL=postgresql://crowduser:tcbPhPViwQrhT7z@postgres.services.ruhmesmeile.local/crowd" \
+  --env "CROWDIDDB_URL=postgresql://crowdiduser:wJnrqvo8vGZHRAB@postgres.services.ruhmesmeile.local/crowdid" \
+  --volume "/var/atlassian/crowd/data:/var/atlassian/crowd" \
+  --volume "/var/atlassian/crowdid/config/crowd.properties:/opt/crowd/crowd-openidserver-webapp/WEB-INF/classes/crowd.properties" \
+  --label "container_group=infrastructure" \
+  ruhmesmeile/crowd:3.5.0
+
+ExecStartPost=-/bin/bash -c '\
+  until [ "$$(docker inspect -f {{.State.Running}} crowd)" == "true" ]; do sleep 1; done; \
+  docker exec -t crowd bash -c \'chown -R crowd:crowd /var/atlassian/crowd && chown -R crowd:crowd /opt/crowd\';'
+
+[X-Fleet]
+MachineMetadata=role=hq

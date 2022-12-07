@@ -1,0 +1,11 @@
+[Unit]
+Description=Path watcher for autodeploy of performance artifacts
+
+[Path]
+DirectoryNotEmpty=/srv/artifacts/performance
+
+[Install]
+WantedBy=multi-user.target
+
+[X-Fleet]
+MachineOf=static-rocks-autodeploy.service

@@ -1,0 +1,69 @@
+[Unit]
+Description=Ory Hydra container - OpenID Connect certified OAuth2 Server
+Documentation=https://github.com/ory/hydra
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+TimeoutSec=300s
+
+ExecStartPre=/usr/bin/docker pull oryd/hydra:v1.0.0-rc.6_oryOS.10
+ExecStartPre=-/usr/bin/docker kill hydra
+ExecStartPre=-/usr/bin/docker rm hydra -v
+ExecStart=/usr/bin/docker run \
+  --name "hydra" --rm \
+  --env "SERVICE_4444_NAME=hydra" \
+  --env "SERVICE_4445_NAME=hydra-admin" \
+  --env "SERVICE_ID=%H" \
+  --env "VIRTUAL_HOST=hydra.ruhmesmeile.tools,hydra3.ruhmesmeile.tools" \
+  --env "VIRTUAL_PORT=4444" \
+  --env "LETSENCRYPT_HOST=hydra.ruhmesmeile.tools,hydra3.ruhmesmeile.tools" \
+  --env "LETSENCRYPT_EMAIL=jonas.ulrich@ruhmesmeile.com" \
+  --env "SYSTEM_SECRET=hoKRc6nWiiHiDF84iLM6Tq2jykHuynGZ" \
+  --env "COOKIE_SECRET=9N4v9PUa2LarcR2EN51GKkfxtg3vQnGR" \
+  --env "DATABASE_URL=postgres://oryhydra:JVo3sgQYVza@postgres.services.ruhmesmeile.local:5432/rmoryhydra?sslmode=disable" \
+  --env "HTTPS_ALLOW_TERMINATION_FROM=10.1.0.0/16" \
+  --env "OAUTH2_ISSUER_URL=https://hydra.ruhmesmeile.tools" \
+  --env "OAUTH2_CONSENT_URL=https://crowdprovider.ruhmesmeile.tools/consent" \
+  --env "OAUTH2_LOGIN_URL=https://crowdprovider.ruhmesmeile.tools/login" \
+  --env "OAUTH2_SHARE_ERROR_DEBUG=1" \
+  --env "LOG_LEVEL=debug" \
+  --env "DISABLE_TELEMETRY=1" \
+  --env "ID_TOKEN_LIFESPAN=1h" \
+  --env "ACCESS_TOKEN_LIFESPAN=1h" \
+  --env "AUTHORIZE_CODE_LIFESPAN=10m" \
+  --env "RESOURCE_NAME_PREFIX=resources:ruhmesmeile.tools" \
+  --expose "4444" \
+  --expose "4445" \
+  --label "container_group=infrastructure" \
+  oryd/hydra:v1.0.0-rc.6_oryOS.10 \
+    serve all
+
+[X-Fleet]
+MachineMetadata=role=hq
+
+# On initialization / upgrade we have to run sql schema migrations:
+# local/$: ssh momcorphq
+# momcorpfdc/$: sudo su
+# momcorpfdc/$: docker run -it --rm oryd/hydra:v1.0.0-rc.6_oryOS.10 migrate sql postgres://oryhydra:JVo3sgQYVza@postgres.services.ruhmesmeile.local:5432/rmoryhydra?sslmode=disable
+#
+# Example result:
+# > Applying `jwk` SQL migrations...
+# > Applied 4 `jwk` SQL migrations.
+# > Applying `client` SQL migrations...
+# > Applied 12 `client` SQL migrations.
+# > Applying `consent` SQL migrations...
+# > Applied 7 `consent` SQL migrations.
+# > Applying `oauth2` SQL migrations...
+# > Applied 9 `oauth2` SQL migrations.
+# > Migration successful! Applied a total of 32 SQL migrations.
+# > Migration successful!
+#
+# # TODO:
+# * We should replace the auto- / self-generated cert with one trusted by our own CA,
+#     which in turn should be trusted everywhere inside the local cluster infrastructure

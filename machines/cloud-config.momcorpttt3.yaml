@@ -1,0 +1,516 @@
+#cloud-config
+
+coreos:
+  flannel:
+    interface: eth0
+    public_ip: 185.170.114.160
+    etcd_cafile: /etc/ssl/etcd/ca.pem
+    etcd_certfile: /etc/ssl/etcd/calculonc.pem
+    etcd_keyfile: /etc/ssl/etcd/calculonc-key.pem
+    etcd_endpoints: "https://127.0.0.1:2379"
+  locksmith:
+    etcd_cafile: /etc/ssl/etcd/ca.pem
+    etcd_certfile: /etc/ssl/etcd/calculonc.pem
+    etcd_keyfile: /etc/ssl/etcd/calculonc-key.pem
+    endpoint: "https://127.0.0.1:2379"
+    # window-start: 04:00
+    # window-length: 2h
+  units:
+    - name: etcd-member.service
+      command: start
+      drop-ins:
+        - name: 1-override.conf
+          content: |
+            [Service]
+            Environment="ETCD_NAME=momcorpttt3"
+            Environment="ETCD_PROXY=on"
+            Environment="ETCD_INITIAL_CLUSTER=calculon3=https://37.120.167.155:2380,calculon4=https://37.221.193.85:2380,calculon1=https://46.38.237.147:2380,calculon5=https://5.45.103.202:2380,calculon2=https://185.170.112.54:2380"
+            Environment="ETCD_LISTEN_CLIENT_URLS=https://0.0.0.0:2379"
+            Environment="ETCD_TRUSTED_CA_FILE=/var/lib/etcd/ssl/ca.pem"
+            Environment="ETCD_CERT_FILE=/var/lib/etcd/ssl/momcorpttt3.pem"
+            Environment="ETCD_KEY_FILE=/var/lib/etcd/ssl/momcorpttt3-key.pem"
+            Environment="ETCD_PEER_TRUSTED_CA_FILE=/var/lib/etcd/ssl/ca.pem"
+            Environment="ETCD_PEER_CERT_FILE=/var/lib/etcd/ssl/momcorpttt3.pem"
+            Environment="ETCD_PEER_KEY_FILE=/var/lib/etcd/ssl/momcorpttt3-key.pem"
+            Environment="ETCD_IMAGE_TAG=v2.3.7"
+            Environment="ETCD_HEARTBEAT_INTERVAL=500"
+            Environment="ETCD_ELECTION_TIMEOUT=5000"
+    - name: edit-etc-group.service
+      command: start
+      content: |
+        [Unit]
+        Description=Add systemd-journal group to /etc/group
+        ConditionFirstBoot=True
+
+        [Service]
+        ExecStart=/usr/bin/sh -c "getent group systemd-journal >> /etc/group"
+        ExecStartPost=/usr/sbin/usermod -aG systemd-journal julrich 
+        ExecStartPost=/usr/sbin/usermod -aG systemd-journal mgunser
+        ExecStartPost=/usr/sbin/usermod -aG systemd-journal hgoebel
+        ExecStartPost=/usr/sbin/usermod -aG systemd-journal lmestel
+        ExecStartPost=/usr/sbin/usermod -aG systemd-journal nkonegen
+        ExecStartPost=/usr/sbin/usermod -aG systemd-journal edridiger
+        ExecStartPost=/usr/sbin/usermod -aG systemd-journal nisaki
+    - name: fleet.socket
+      command: start
+      enable: true
+      content: |
+        [Unit]
+        Description=Fleet socket
+
+        [Socket]
+        ListenStream=/var/run/fleet.sock
+        SocketUser=fleet
+        SocketGroup=fleet
+        SocketMode=0660
+
+        [Install]
+        WantedBy=sockets.target
+    - name: fleet.service
+      command: start
+      enable: true
+      content: |
+        [Unit]
+        After=etcd-member.service flanneld.service fleet.socket docker.service
+        Wants=network.target fleet.socket
+        Requires=etcd-member.service
+
+        [Service]
+        Type=simple
+        Restart=always
+        RestartSec=10s
+        LimitNOFILE=40000
+        TimeoutStartSec=0
+        Environment="FLEET_PUBLIC_IP=185.170.114.160"
+        Environment="FLEET_METADATA=role=ttt,instance=3"
+        Environment="FLEET_ETCD_CAFILE=/var/lib/etcd/ssl/ca.pem"
+        Environment="FLEET_ETCD_CERTFILE=/var/lib/etcd/ssl/calculonc.pem"
+        Environment="FLEET_ETCD_KEYFILE=/var/lib/etcd/ssl/calculonc-key.pem"
+        Environment="FLEET_ETCD_SERVERS=https://46.38.237.147:2379,https://185.170.112.54:2379,https://37.120.167.155:2379,https://37.221.193.85:2379,https://5.45.103.202:2379"
+        Environment="FLEET_ETCD_REQUEST_TIMEOUT=10"
+        Environment="FLEET_ENGINE_RECONCILE_INTERVAL=3"
+        Environment="FLEET_AGENT_TTL=30s"
+        Environment="FLEET_IMAGE_TAG=v0.11.8"
+        Environment="FLEET_USER=fleet"
+        Environment="FLEET_GROUP=fleet"
+        ExecStartPre=/usr/bin/systemctl is-active flanneld.service
+        ExecStartPre=/usr/bin/systemctl is-active docker.service
+        ExecStartPre=/usr/bin/mkdir --parents /etc/fleet /run/dbus /run/fleet/units
+        ExecStartPre=/usr/bin/sh -c "chown -R fleet:fleet /etc/fleet /run/fleet"
+        ExecStartPre=/usr/bin/rkt trust --prefix "quay.io/coreos/fleet" --skip-fingerprint-review
+        ExecStart=/opt/bin/fleet-wrapper
+    - name: flanneld.service
+      drop-ins:
+        - name: 10-before-docker.conf
+          content: |
+            [Unit]
+            Before=docker.service
+        - name: 20-env-config.conf
+          content: |
+            [Service]
+            EnvironmentFile=/run/flannel/options.env
+        - name: 50-network-config.conf
+          content: |
+            [Service]
+            ExecStartPre=/usr/bin/etcdctl --no-sync --cert-file=/etc/ssl/etcd/calculonc.pem --key-file=/etc/ssl/etcd/calculonc-key.pem --ca-file=/etc/ssl/etcd/ca.pem --endpoint="https://127.0.0.1:2379" set /coreos.com/network/config '{ "Network": "10.1.0.0/16" }'
+      command: start
+    - name: rpc-statd.service
+      command: start
+      enable: true
+    - name: srv-storage.mount
+      command: start
+      content: |
+        [Mount]
+        What=46.38.248.210:/voln112487a1
+        Where=/srv/storage
+        Type=nfs
+    - name: format-var-lib-docker.service
+      command: start
+      content: |
+        [Unit]
+        Before=docker.service var-lib-docker.mount
+        ConditionPathExists=!/var/lib/docker.btrfs
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/bin/truncate --size=70G /var/lib/docker.btrfs
+        ExecStart=/usr/sbin/mkfs.btrfs /var/lib/docker.btrfs
+    - name: var-lib-docker.mount
+      enable: true
+      content: |
+        [Unit]
+        Before=docker.service
+        After=format-var-lib-docker.service
+        Requires=format-var-lib-docker.service
+        [Install]
+        RequiredBy=docker.service
+        [Mount]
+        What=/var/lib/docker.btrfs
+        Where=/var/lib/docker
+        Type=btrfs
+        Options=loop,discard
+    - name: docker-tls-tcp.socket
+      command: start
+      enable: true
+      content: |
+        [Unit]
+        Description=Docker Secured Socket for the API
+
+        [Socket]
+        ListenStream=2376
+        BindIPv6Only=both
+        Service=docker.service
+
+        [Install]
+        WantedBy=sockets.target
+    - name: docker.service
+      drop-ins:
+        - name: 10-after-flanneld.conf
+          content: |
+            [Unit]
+            Requires=flanneld.service
+            After=flanneld.service
+        - name: 20-tls-verify.conf
+          content: |
+            [Service]
+            Environment="DOCKER_OPTS=--tlsverify --tlscacert=/etc/docker/ca.pem --tlscert=/etc/docker/momcorpttt3.pem --tlskey=/etc/docker/momcorpttt3-key.pem"
+        - name: 50-mk-docker-dns-opts.conf
+          content: |
+            [Unit]
+            Requires=mk-docker-dns-opts.service
+            After=mk-docker-dns-opts.service
+            [Service]
+            EnvironmentFile=/run/docker_dns_opt.env
+            ExecStart=
+            ExecStart=/usr/bin/env PATH=${TORCX_BINDIR}:${PATH} ${TORCX_BINDIR}/dockerd --host=fd:// --containerd=/var/run/docker/libcontainerd/docker-containerd.sock $DOCKER_SELINUX $DOCKER_OPTS $DOCKER_OPT_DNS $DOCKER_CGROUPS $DOCKER_OPT_BIP $DOCKER_OPT_MTU $DOCKER_OPT_IPMASQ
+            ExecStartPost=-/bin/docker login --username ruhmesmeile --password 00605db2-8a8d-402b-b30d-bb5dcc64a5d1
+    - name: skydns.service
+      enable: false
+      content: |
+        [Unit]
+        Description=SkyDNS
+        After=docker.service
+        Requires=docker.service
+
+        [Service]
+        Restart=always
+        TimeoutStartSec=600s
+        EnvironmentFile=/etc/environment
+        Environment="ETCD_TLSKEY=/etc/ssl/etcd/calculonc-key.pem"
+        Environment="ETCD_TLSPEM=/etc/ssl/etcd/calculonc.pem"
+        Environment="ETCD_CACERT=/etc/ssl/etcd/ca.pem"
+        Environment="PROMETHEUS_PORT=8081"
+        ExecStartPre=-/usr/bin/docker rm -f skydns
+        ExecStartPre=/usr/bin/docker pull skynetservices/skydns
+        ExecStartPre=/bin/bash -c 'etcdctl --no-sync set /skydns/config "{\\"domain\\": \\"services.ruhmesmeile.local.\\", \\"nameservers\\": [\\"8.8.8.8:53\\",\\"8.8.4.4:53\\"], \\"ttl\\": 300, \\"hostmaster\\": \\"infrastructure@ruhmesmeile.com\\", \\"dns_addr\\": \\"$(ip addr show dev docker0 |grep "inet " |sed -re "s/.+ inet ([0-9\\.]+).+/\\1/g"):53\\"}"'
+        ExecStart=/usr/bin/env bash -c '/usr/bin/docker run --rm --name skydns --net host -v /etc/ssl/etcd/calculonc-key.pem:/etc/ssl/etcd/calculonc-key.pem -v /etc/ssl/etcd/calculonc.pem:/etc/ssl/etcd/calculonc.pem -v /etc/ssl/etcd/ca.pem:/etc/ssl/etcd/ca.pem -e "ETCD_MACHINES=https://127.0.0.1:2379" -e ETCD_CACERT -e ETCD_TLSPEM -e ETCD_TLSKEY -e PROMETHEUS_PORT skynetservices/skydns -discover -local public.addresses.services.ruhmesmeile.local'
+        ExecStartPost=/usr/bin/env bash -c 'sed -i "/^DNS=/c\DNS=$(ip addr show dev docker0 |grep "inet " |sed -re "s/.+ inet ([0-9\\.]+).+/\\1/g")" /etc/systemd/resolved.conf'
+        ExecStartPost=/usr/bin/env bash -c 'sed -i "/^#DNS=/c\DNS=$(ip addr show dev docker0 |grep "inet " |sed -re "s/.+ inet ([0-9\\.]+).+/\\1/g")" /etc/systemd/resolved.conf'
+        ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /skydns/local/ruhmesmeile/services/dns/ns/%H "{\\"host\\": \\"$(ip addr show dev docker0 |grep "inet " |sed -re "s/.+ inet ([0-9\\.]+).+/\\1/g")\\"}"'
+        ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /skydns/local/ruhmesmeile/services/addresses/public "{\\"host\\": \\"$(ip addr show dev docker0 |grep "inet " |sed -re "s/.+ inet ([0-9\\.]+).+/\\1/g")\\"}"'
+        ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /skydns/local/ruhmesmeile/services/addresses/roles/ttt/%H "{\\"host\\": \\"$(ip addr show dev docker0 |grep "inet " |sed -re "s/.+ inet ([0-9\\.]+).+/\\1/g")\\"}"'
+        ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /skydns/local/ruhmesmeile/services/etcd/%H "{\\"host\\": \\"$(ip addr show dev docker0 |grep "inet " |sed -re "s/.+ inet ([0-9\\.]+).+/\\1/g")\\",\\"port\\": 2379}"'
+        ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /skydns/local/ruhmesmeile/services/skydns-53/%H "{\\"host\\": \\"$(ip addr show dev docker0 |grep "inet " |sed -re "s/.+ inet ([0-9\\.]+).+/\\1/g")\\",\\"port\\": 53}"'
+        ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /skydns/local/ruhmesmeile/services/skydns-8081/%H "{\\"host\\": \\"$(ip addr show dev docker0 |grep "inet " |sed -re "s/.+ inet ([0-9\\.]+).+/\\1/g")\\",\\"port\\": 8081}"'
+        ExecStartPost=/usr/bin/systemctl restart systemd-resolved.service
+        ExecStop=-/usr/bin/docker rm -f skydns
+
+        [X-Fleet]
+        Global=true
+      command: start
+    - name: registrator.service
+      enable: false
+      content: |
+        [Unit]
+        Description=Registrator
+        Requires=flanneld.service
+        After=flanneld.service
+        After=fleet.service
+        After=skydns.service
+
+        [Service]
+        Environment="ETCD_TLSKEY=/etc/ssl/etcd/calculonc-key.pem"
+        Environment="ETCD_TLSPEM=/etc/ssl/etcd/calculonc.pem"
+        Environment="ETCD_CACERT=/etc/ssl/etcd/ca.pem"
+        ExecStartPre=-/usr/bin/docker kill registrator
+        ExecStartPre=-/usr/bin/docker rm registrator
+        ExecStartPre=/usr/bin/docker pull ruhmesmeile/registrator:skydns
+        ExecStart=/usr/bin/env bash -c '/usr/bin/docker run --net=host -v /var/run/docker.sock:/tmp/docker.sock -v /etc/ssl/etcd/calculonc-key.pem:/etc/ssl/etcd/calculonc-key.pem -v /etc/ssl/etcd/calculonc.pem:/etc/ssl/etcd/calculonc.pem -v /etc/ssl/etcd/ca.pem:/etc/ssl/etcd/ca.pem -e ETCD_TLSKEY -e ETCD_TLSPEM -e ETCD_CACERT --name registrator ruhmesmeile/registrator:skydns -internal -cleanup -resync 600 -ttl 90 -ttl-refresh 30 skydns2://127.0.0.1:2379/services.ruhmesmeile.local'
+        ExecStop=/usr/bin/docker stop registrator
+        Restart=always
+
+        [X-Fleet]
+        Global=true
+      command: start
+    - name: sshd.socket
+      command: restart
+      runtime: true
+      content: |
+        [Socket]
+        ListenStream=2222
+        FreeBind=true
+        Accept=yes
+    - name: add-flannel-sshd.service
+      enable: false
+      content: |
+        [Unit]
+        Description=Add sshd on flannel network on port 22
+        After=docker.service
+        Requires=docker.service
+
+        [Service]
+        ExecStartPre=/bin/bash -c 'printf "[Socket]\nListenStream=2222\nFreeBind=true\nAccept=yes\nListenStream=$(ip addr show dev docker0 |grep "inet " |sed -re "s/.+ inet ([0-9\\.]+).+/\\1/g"):22" > /etc/systemd/system/sshd.socket'
+        ExecStart=/bin/systemctl daemon-reload
+        ExecStartPost=/bin/bash -c 'sleep 5s; /bin/systemctl restart sshd.socket'
+      command: start
+    - name: bashrc-envs.service
+      content: |
+        [Unit]
+        Description=Environment variables for bash
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStart=-/usr/bin/env bash -c 'rm /home/julrich/.bashrc'
+        ExecStart=-/usr/bin/env bash -c 'rm /home/mgunser/.bashrc'
+        ExecStart=-/usr/bin/env bash -c 'rm /home/hgoebel/.bashrc'
+        ExecStart=-/usr/bin/env bash -c 'rm /home/lmestel/.bashrc'
+        ExecStart=-/usr/bin/env bash -c 'rm /home/nkonegen/.bashrc'
+        ExecStart=-/usr/bin/env bash -c 'rm /home/edridiger/.bashrc'
+        ExecStart=-/usr/bin/env bash -c 'rm /home/nisaki/.bashrc'
+        ExecStart=/usr/bin/env bash -c 'cp -u /usr/share/skel/.bashrc /home/julrich/.bashrc'
+        ExecStart=/usr/bin/env bash -c 'cp -u /usr/share/skel/.bashrc /home/mgunser/.bashrc'
+        ExecStart=/usr/bin/env bash -c 'cp -u /usr/share/skel/.bashrc /home/hgoebel/.bashrc'
+        ExecStart=/usr/bin/env bash -c 'cp -u /usr/share/skel/.bashrc /home/lmestel/.bashrc'
+        ExecStart=/usr/bin/env bash -c 'cp -u /usr/share/skel/.bashrc /home/nkonegen/.bashrc'
+        ExecStart=/usr/bin/env bash -c 'cp -u /usr/share/skel/.bashrc /home/edridiger/.bashrc'
+        ExecStart=/usr/bin/env bash -c 'cp -u /usr/share/skel/.bashrc /home/nisaki/.bashrc'
+        ExecStart=/usr/bin/env bash -c 'sed -E -n \'s/[^#]+/export &/ p\' /etc/environment >> /home/julrich/.bashrc'
+        ExecStart=/usr/bin/env bash -c 'sed -E -n \'s/[^#]+/export &/ p\' /etc/environment >> /home/mgunser/.bashrc'
+        ExecStart=/usr/bin/env bash -c 'sed -E -n \'s/[^#]+/export &/ p\' /etc/environment >> /home/hgoebel/.bashrc'
+        ExecStart=/usr/bin/env bash -c 'sed -E -n \'s/[^#]+/export &/ p\' /etc/environment >> /home/lmestel/.bashrc'
+        ExecStart=/usr/bin/env bash -c 'sed -E -n \'s/[^#]+/export &/ p\' /etc/environment >> /home/nkonegen/.bashrc'
+        ExecStart=/usr/bin/env bash -c 'sed -E -n \'s/[^#]+/export &/ p\' /etc/environment >> /home/edridiger/.bashrc'
+        ExecStart=/usr/bin/env bash -c 'sed -E -n \'s/[^#]+/export &/ p\' /etc/environment >> /home/nisaki/.bashrc'
+        ExecStart=/usr/bin/env bash -c 'echo "export PATH=\$PATH:/opt/bin" >> /home/julrich/.bashrc'
+        ExecStart=/usr/bin/env bash -c 'echo "export PATH=\$PATH:/opt/bin" >> /home/mgunser/.bashrc'
+        ExecStart=/usr/bin/env bash -c 'echo "export PATH=\$PATH:/opt/bin" >> /home/hgoebel/.bashrc'
+        ExecStart=/usr/bin/env bash -c 'echo "export PATH=\$PATH:/opt/bin" >> /home/lmestel/.bashrc'
+        ExecStart=/usr/bin/env bash -c 'echo "export PATH=\$PATH:/opt/bin" >> /home/nkonegen/.bashrc'
+        ExecStart=/usr/bin/env bash -c 'echo "export PATH=\$PATH:/opt/bin" >> /home/edridiger/.bashrc'
+        ExecStart=/usr/bin/env bash -c 'echo "export PATH=\$PATH:/opt/bin" >> /home/nisaki/.bashrc'
+        ExecStart=/usr/bin/env bash -c 'echo "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/opt/bin" > /home/julrich/.ssh/environment'
+        ExecStart=/usr/bin/env bash -c 'echo "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/opt/bin" > /home/mgunser/.ssh/environment'
+        ExecStart=/usr/bin/env bash -c 'echo "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/opt/bin" > /home/hgoebel/.ssh/environment'
+        ExecStart=/usr/bin/env bash -c 'echo "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/opt/bin" > /home/lmestel/.ssh/environment'
+        ExecStart=/usr/bin/env bash -c 'echo "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/opt/bin" > /home/nkonegen/.ssh/environment'
+        ExecStart=/usr/bin/env bash -c 'echo "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/opt/bin" > /home/edridiger/.ssh/environment'
+        ExecStart=/usr/bin/env bash -c 'echo "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/opt/bin" > /home/nisaki/.ssh/environment'
+      command: start
+    - name: disable-transparent-hugepage.service
+      content: |
+        [Unit]
+        Description=Disable transparent hugepages for redis performance
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStart=/usr/bin/sh -c "/usr/bin/echo 'never' | tee /sys/kernel/mm/transparent_hugepage/enabled"
+        ExecStart=/usr/bin/sh -c "/usr/bin/echo 'never' | tee /sys/kernel/mm/transparent_hugepage/defrag"
+  update:
+    reboot-strategy: "etcd-lock"
+write_files:
+  - path: /etc/ssh/sshd_config
+    permissions: 0600
+    owner: root:root
+    content: |
+      # Use most defaults for sshd configuration.
+      UsePrivilegeSeparation sandbox
+      Subsystem sftp internal-sftp
+      PermitRootLogin no
+      AllowUsers core julrich hgoebel mgunser lmestel nkonegen edridiger nisaki
+      PasswordAuthentication no
+      ChallengeResponseAuthentication no
+      ClientAliveInterval 180
+      UseDNS no
+      UsePAM yes
+      PrintLastLog no # handled by PAM
+      PrintMotd no # handled by PAM
+      PermitUserEnvironment yes
+  - path: /etc/systemd/system/mk-docker-dns-opts.service
+    permissions: 0644
+    content: |
+      [Unit]
+      Description=Make DNS arg for Docker daemon
+      After=flanneld.service
+      Requires=flanneld.service
+
+      [Service]
+      Type=oneshot
+      ExecStart=/bin/bash -c 'echo $(grep FLANNEL_SUBNET /run/flannel/subnet.env | sed "s/.*=/DOCKER_OPT_DNS=\\\"--dns=/;s_/.*_\\\"_") >/run/docker_dns_opt.env'
+  - path: /etc/systemd/resolved.conf
+    permissions: 0644
+    content: |
+      #  This file is part of systemd.
+      #
+      #  systemd is free software; you can redistribute it and/or modify it
+      #  under the terms of the GNU Lesser General Public License as published by
+      #  the Free Software Foundation; either version 2.1 of the License, or
+      #  (at your option) any later version.
+      #
+      # Entries in this file show the compile time defaults.
+      # You can change settings by editing this file.
+      # Defaults can be restored by simply deleting this file.
+      #
+      # See resolved.conf(5) for details
+
+      [Resolve]
+      #DNS=10.1.9.1
+      #FallbackDNS=
+      #LLMNR=yes
+  # @see: https://github.com/coreos/fleet/blob/master/scripts/fleet-wrapper
+  # slightly modified to load keys in a volume, and add the user group, too
+  - path: /opt/bin/fleet-wrapper
+    permissions: 0755
+    owner: root:root
+    content: |
+      #!/bin/bash
+      # Wrapper for launching fleet via rkt-fly.
+      #
+      # Users could set FLEET_IMAGE_TAG to an image tag published here:
+      # https://quay.io/repository/coreos/fleet?tab=tags Alternatively,
+      # override FLEET_IMAGE to a custom image.
+
+      RKT_GLOBAL_ARGS="--insecure-options=image"
+
+      FLEET_IMAGE_URL="${FLEET_IMAGE_URL:-quay.io/coreos/fleet}"
+      FLEET_IMAGE_TAG="${FLEET_IMAGE_TAG:-v1.0.0}"
+      FLEET_IMAGE="${FLEET_IMAGE:-${FLEET_IMAGE_URL}:${FLEET_IMAGE_TAG}}"
+      FLEET_USER="${FLEET_USER:-fleet}"
+      FLEET_GROUP="${FLEET_GROUP:-fleet}"
+
+      if [[ "${FLEET_IMAGE%%/*}" == "quay.io" ]]; then
+        RKT_RUN_ARGS="${RKT_RUN_ARGS} --trust-keys-from-https"
+      fi
+
+      mkdir --parents /etc/fleet
+      mkdir --parents /run/dbus
+      mkdir --parents /run/fleet
+
+      RKT="${RKT:-/usr/bin/rkt}"
+      RKT_STAGE1_ARG="${RKT_STAGE1_ARG:---stage1-path=/usr/lib/rkt/stage1-images/stage1-fly.aci}"
+      set -x
+      exec ${RKT} ${RKT_GLOBAL_ARGS} \
+        ${RKT_STAGE1_ARG} \
+        run ${RKT_RUN_ARGS} \
+        --volume etc-fleet,kind=host,source=/etc/fleet,readOnly=true \
+        --volume machine-id,kind=host,source=/etc/machine-id,readOnly=true \
+        --volume run,kind=host,source=/run,readOnly=false \
+        --volume keys,kind=host,source=/var/lib/etcd/ssl,readOnly=true \
+        --mount volume=etc-fleet,target=/etc/fleet \
+        --mount volume=machine-id,target=/etc/machine-id \
+        --mount volume=run,target=/run \
+        --mount volume=keys,target=/var/lib/etcd/ssl \
+        --inherit-env \
+        --set-env=DBUS_SYSTEM_BUS_ADDRESS=unix:path=/run/dbus/system_bus_socket \
+        ${FLEET_IMAGE} \
+        --user=$(id -u "${FLEET_USER}") \
+        --group=$(id -g "${FLEET_GROUP}") \
+        -- "$@"
+  # @see: https://groups.google.com/d/msg/coreos-user/E49IZJYIHD4/_CdpZTHpBQAJ
+  - path: /etc/polkit-1/rules.d/98-fleet-org.freedesktop.systemd1.rules
+    permissions: 0755
+    owner: root:root
+    content: |
+      polkit.addRule(function(action, subject) {
+        if (action.id.indexOf("org.freedesktop.systemd1.") == 0 &&
+            subject.user == "fleet") {
+              return polkit.Result.YES;
+        }
+      });
+  - path: /etc/profile.d/etcdctl.sh
+    permissions: 0755
+    owner: "root"
+    content: |
+      export ETCDCTL_CA_FILE=/etc/ssl/etcd/ca.pem
+      export ETCDCTL_CERT_FILE=/etc/ssl/etcd/calculonc.pem
+      export ETCDCTL_KEY_FILE=/etc/ssl/etcd/calculonc-key.pem
+      export ETCDCTL_ENDPOINTS="https://127.0.0.1:2379"
+  - path: /etc/profile.d/locksmithctl.sh
+    permissions: 0755
+    owner: "root"
+    content: |
+      export LOCKSMITHCTL_ETCD_CAFILE=/etc/ssl/etcd/ca.pem
+      export LOCKSMITHCTL_ETCD_CERTFILE=/etc/ssl/etcd/calculonc.pem
+      export LOCKSMITHCTL_ETCD_KEYFILE=/etc/ssl/etcd/calculonc-key.pem
+      export LOCKSMITHCTL_ENDPOINT="https://127.0.0.1:2379"
+      # These were in use before, still needed? Somehow here we use a single local endpoint.. maybe we needed the list because of external IPs, or stuff. Keep an eye!
+      #     endpoint: "https://46.38.237.147:2379,https://185.170.112.54:2379,https://37.120.167.155:2379,https://37.221.193.85:2379,https://5.45.103.202:2379"
+      #     window-start: 04:00
+      #     window-length: 2h
+  - path: /etc/sysctl.d/net.conf
+    content: net.core.somaxconn=1024
+  - path: /etc/sysctl.d/vm.conf
+    content: vm.overcommit_memory=1
+  - path: /etc/environment
+    permissions: 0644
+    content: |
+      ETCDCTL_ENDPOINT=https://127.0.0.1:2379/
+hostname: "momcorpttt3"
+users:
+  - name: "julrich"
+    groups:
+      - "sudo"
+      - "docker"
+      - "fleet"
+    shell: /bin/bash
+    ssh-authorized-keys:
+      - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDHEaWHErrzygdvVv6R6GBtPKujJeFoLFTCnvHqvmyS6lg6x20Jg79aSNC12ziQKn3EMuETSecOHEWrNi6Y2dHIjG+Nw9BA/P9gjgoS7+ME3yzEhIs5VakhaJud0gJz1n4Ls7LZGHg7OuAJqeQiLIVThLM1/E3IRBG8p8kVpsCGOu8ZyXFnvG/E6uykvdw2+kVfZyGTkkU8r1xPRqAhpZAYYsPXHmomQ1My6/52jqAJx/YtWJQyTZlJhSAyNHV0B+ba4yJUxN9uA/2Q06wxJj7MLaDrtMcvf7of8YoU2AXitppyYLfSBjagEEqsEkQ2nJMMkTN94l/WVasRJMxfd/ceb8Ts5WGlqg+aGSm68gw4FWGVPYqadiI5+vsoXOZLrmWnVA6/S2bpZdjzg7mn45TwnqPgsR2MtU8PKOErjEIKKP4FHeLMspdbTmbJjN4nT7LR2B7YLHY/09wdhysjzFmCNTbybkMPKmte8hBPtbYH4+xI01f/Ur/HKMvQpYyTomqtohDQSKZ0rBi3MbvgWEMpeewbPdVAvbg2cW2hZlap2syI2mlYSvfseuUSDc6HjD7RPx/eHBhFUsGyaV+Ssmokjyb1SGVoNVNSwAHaQQPt9e/yqyiN10h0VN+cOPyYHWCLSEkCzkN6IgjuyN5O5+4aVcyuVpU3TULWoyo7O2RDlQ== jonas.ulrich@ruhmesmeile.com"
+  - name: "mgunser"
+    groups:
+      - "sudo"
+      - "docker"
+      - "fleet"
+    shell: /bin/bash
+    ssh-authorized-keys:
+      - "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAmwUukui4lC0TSQAfYqak/AYIMeeDLyjfGAJTLQomCnRpTZJVEjqZ+FjRLW84QNBsj+UweJGB4ReLg4ooMu8fYHagQiT5mA4t/o/JAzQZv0Nuo8qSYSCvcnTYkJmJRyRCJe8m09joKSX2VaIXRCuRG/8ab5gWtgTHztOTTIMuzfY6/HE8hkcMW5YKbfpLIiJMRQympKsjQNAwkX4NpqI9qg1Im3VnqleSyAG4D0n8PFujCh3EgSUh1EfVcCh8DlNER60cgST9GvAdH891EtWBHckz0l0vHKjNU+0b8oxCVn85WbUeWPZV/51Bjd2dD0TCA5qhV5QSeiWcXydmJcu1nQ== mgunser@Rumer-Mays-iMac.local"
+  - name: "hgoebel"
+    groups:
+      - "sudo"
+      - "docker"
+      - "fleet"
+    shell: /bin/bash
+    ssh-authorized-keys:
+      - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDbDES4eO8bJDtf1j/UhjPZSIDDK2uRcqOaqvB2fBfuK8AdTBc6RjalzHcvbxSKkntdX4t5PDk/xXYsLVVbvvBbCXe992Qa6dMZn2kNXubqDbqk27kZivOArsBVZoUHmVMQXohMT7LUhuMHeoYx4NBVRGKAr4x0+3FhIEsuvd32RW4BsaxlAOcT+sESwT93oSjNw9MVvDUpRBKfNe/GUtL2Ki7MmLQtozrZKlZSTvTMghxGj1H4+OaxlkqGcLq/mY+SjIzcZNM8lNkneC6TE7unUz3GRkS3Z3oo/eAROFDAs+zdvw+pbGr7WEF2po8gL8wUnCvTExewtEGlX2GLAMTR hendrikg@hendrikg"
+  - name: "lmestel"
+    groups:
+      - "sudo"
+      - "docker"
+      - "fleet"
+    shell: /bin/bash
+    ssh-authorized-keys:
+      - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC9eaD7BKcWxX+jZMt2Fv7XW4MT2YytqNqyj6tctW1o4tQpGDK23PjYOaAAmeEbUR4Hdr756lXhuRTBk0W7QNJkyxktXy4f9qE27u9fUUgQhF/4SQPqW949qTdhnvtFvFyo4Hxp9b2YXmFlwWLZYDV1OceVBrDywzeNWH52GDtxpMB4WjtgSy/pxd30plk57mj8hChRwRSypvXjmi0wcV5UNJy1ywX6G3lpxD5r/n5TVWXIvg5SDazTi9enTaybirjr9g5TqfPVvnZ3h0THgv9luyWgWKM637+aOXpU/Zjc5rg0htg8AAMSAlJwqkcdC+jIhLyhJ3ruUs2ynIhEN3t5 lukas.mestel@ruhmesmeile.com"
+  - name: "nkonegen"
+    groups:
+      - "sudo"
+      - "docker"
+      - "fleet"
+    shell: /bin/bash
+    ssh-authorized-keys:
+      - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDjsKMne10FaqzcEvXKuiHGRow/VB9m+rwLHlwUK0HZONafsBVMauJ+gnec8XnMqDiBSWb+QDXkgoyhBm960AjdWyAKtgiyTYwHqE+CDz6QwN9PJNoUTRYc/6uzHiK+QeZo+ZlCxgTGXVguOc0eQTm+bK5knUAVFqK9lfVJAferZwzzvzWAaU89Z5BsV4OZjPC6SSWd9ZXbeNK6e57FEhZ8MWaHMckG8/OjNh1yGAlMK6bfksaNBUOckb0EppWvoG6QgRfXcFwg50S6PXCMvcDHACnDf7DuUu4bxFByceEhQThjpD0/Z2ajZgk2xkEDi8fNefVt0WtFc4brMeeSHI7n nicole.konegen@ruhmesmeile.com"
+  - name: "edridiger"
+    groups:
+      - "sudo"
+      - "docker"
+      - "fleet"
+    shell: /bin/bash
+    ssh-authorized-keys:
+      - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDcRbGGCpXObJYOR2pJqp15Up4sopW8X5J3m0sQYOV5CQkYZq0WxzeL7LZD6sT6dXoOLm0HEqtIqCdZlKtU7Ae12CAp9IPjy+PtoNpn0BrMGDwSDZIaWf17IduaRjm7qjWdO1wg4n8M7T4EKDBoWVVvX8lwH6FA4v7ASGwO8cc2kVyTtiKp7IEPb2YkXWvbmgC6PdnDWVuXBAsDtJ43ZqDzjkVcwT+AKjkyoZ6sDjQURszu/uxOb+IJOsNCe25DiZKck4r7OFljDqp1ihB/pIsUm3xcYksFEVqIjPXOY0l3rA41mvG2gsW4sMLq9TNWfhV3C2dOiSFhAgF3VhdW7V7X eduard.dridiger@ruhmesmeile.com"
+  - name: "nisaki"
+    groups:
+      - "sudo"
+      - "docker"
+      - "fleet"
+    shell: /bin/bash
+    ssh-authorized-keys:
+      - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC6qpXPFutLrPl8eZMBqPtHzFk21MNndztPs2bq+tt3tGKEx4p+zUfyoS0doeSf4Kir0xM+NgyQyG7b04kCIV5YfFg6J8L6BA86rR61b70hYHkVf9VGJSTh8+MjL8fvgpmuocs//MDU6wXf3EoV1dGZPaRPJw+i3rwQ1st5VQWYhATPYiba5sPgf8CJUbW/SNzPQe8Kviy4Pyn7M9iK0X2eqaMxm/o4rdOBtjid70A7iEiHl2eQUHZW7dUX/CXB3dlN1CuqFIpOGDs7FtNnbb0W3N84cNQxXkltd9etqabdcTBwbYAb2syAKAnuxKBROkw6avlRK5lsj85ATqt6Ax5x nazif.isaki@ruhmesmeile.com"
+

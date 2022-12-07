@@ -1,0 +1,19 @@
+[Unit]
+Description=Reload Nginx configuration
+
+Requires=docker.service
+Requires=nginx@%i.service
+
+After=docker.service
+After=nginx@%i.service
+
+[Service]
+Type=oneshot
+
+ExecStart=/usr/bin/docker kill --signal=HUP nginx
+
+[Install]
+WantedBy=multi-user.target
+
+[X-Fleet]
+MachineOf=nginx@%i.service

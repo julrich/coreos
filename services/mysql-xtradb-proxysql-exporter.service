@@ -1,0 +1,20 @@
+[Unit]
+Description=Prometheus exporter for proxysql stats
+Documentation=https://github.com/percona/proxysql_exporter
+
+[Service]
+Restart=always
+RestartSec=30s
+TimeoutStartSec=360s
+
+User=root
+EnvironmentFile=/etc/environment
+
+ExecStartPre=-/bin/bash -c '/usr/bin/systemctl set-environment DATA_SOURCE_NAME="stats:stats@tcp(mysql-management.services.ruhmesmeile.local:6032)/"'
+
+ExecStart=/opt/bin/proxysql_exporter
+
+ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /skydns/local/ruhmesmeile/services/proxysql-exporter/%H "{\\"host\\": \\"$(ip addr show dev docker0 |grep "inet " |sed -re "s/.+ inet ([0-9\\.]+).+/\\1/g")\\",\\"port\\":42004}"'
+
+[X-Fleet]
+MachineOf=mysql-xtradb-proxysql.service

@@ -1,0 +1,9 @@
+Host bitbucket.ruhmesmeile.tools
+	StrictHostKeyChecking no
+	HostName 188.68.54.21
+	IdentityFile /usr/sbin/.ssh/nopass_rsa
+
+Host bitbucket-internal.services.ruhmesmeile.local
+	StrictHostKeyChecking no
+	HostName 188.68.54.21
+	IdentityFile /usr/sbin/.ssh/nopass_rsa

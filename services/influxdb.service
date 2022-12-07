@@ -1,0 +1,36 @@
+[Unit]
+Description=Collects resource usage and performance characteristics of ruhmesmeile CLI (rm-cli)
+Documentation=https://github.com/influxdata/influxdb
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+ExecStartPre=-/usr/bin/docker kill influxdb
+ExecStartPre=-/usr/bin/docker rm influxdb
+ExecStartPre=/usr/bin/docker pull quay.io/influxdb/influxdb:2.0.0-beta
+
+ExecStart=/usr/bin/docker run \
+  --name "influxdb" \
+  --env "SERVICE_NAME=influxdb" \
+  --env "SERVICE_ID=%H" \
+  --env "VIRTUAL_HOST=influxdb.ruhmesmeile.tools" \
+  --env "VIRTUAL_PORT=9999" \
+  --env "LETSENCRYPT_HOST=influxdb.ruhmesmeile.tools" \
+  --env "LETSENCRYPT_EMAIL=jonas.ulrich@ruhmesmeile.com" \
+  --label "container_group=monitoring" \
+  --volume "/var/influxdb/data:/var/lib/influxdb2" \
+  quay.io/influxdb/influxdb:2.0.0-beta \
+  --bolt-path /var/lib/influxdb2/influxd.bolt \
+  --engine-path /var/lib/influxdb2/engine \
+  --store bolt \
+  --reporting-disabled 
+
+ExecStop=-/usr/bin/docker stop influxdb
+
+[X-Fleet]
+MachineMetadata=role=fdc

@@ -1,0 +1,33 @@
+[Unit]
+Description=Metrics exporter for TYPO3 development webpages
+Documentation=https://github.com/ruhmesmeile/typo3-etcd-exporter
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+ExecStartPre=-/usr/bin/docker kill 'typo3-tech-exporter-%i'
+ExecStartPre=-/usr/bin/docker rm 'typo3-tech-exporter-%i' -v
+ExecStartPre=/usr/bin/docker pull ruhmesmeile/typo3-etcd-exporter:latest
+
+ExecStart=/usr/bin/docker run \
+  --name "typo3-tech-exporter-%i" --rm \
+  --env "SERVICE_8080_NAME=typo3-tech-exporter" \
+  --env "SERVICE_ID=%i" \
+  --env "TYPO3_PROJECTKEY=%i" \
+  --env "TYPO3_STAGE=tech" \
+  --env "TYPO3_SERVICES=typo3,mail,solr" \
+  --env "TYPO3_REQUIRED_SERVICES=typo3,mail" \
+  --env "MACHINEID=%H" \
+  --label "container_group=typo3" \
+  --volume "/etc/ssl/etcd/calculonc-key.pem:/etc/ssl/etcd/calculonc-key.pem" \
+  --volume "/etc/ssl/etcd/calculonc.pem:/etc/ssl/etcd/calculonc.pem" \
+  --volume "/etc/ssl/etcd/ca.pem:/etc/ssl/etcd/ca.pem" \
+  ruhmesmeile/typo3-etcd-exporter:latest
+
+[X-Fleet]
+MachineMetadata=role=ttt

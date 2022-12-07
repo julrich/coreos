@@ -1,0 +1,8 @@
+[Unit]
+Description=Renew Vault token inside Bamboo, needed for builds and deployments
+
+[Timer]
+OnCalendar=*:0/5
+
+[X-Fleet]
+MachineOf=bamboo-token-refresher.service

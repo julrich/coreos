@@ -1,0 +1,45 @@
+[Unit]
+Description=Host composer dependencies inside our own infrastructure
+Documentation=https://github.com/ruhmesmeile/docker-satis
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+TimeoutSec=300s
+
+ExecStartPre=-/usr/bin/docker kill satis
+ExecStartPre=-/usr/bin/docker rm satis -v
+ExecStartPre=/usr/bin/docker pull ruhmesmeile/docker-satis:latest
+
+ExecStart=/usr/bin/docker run \
+  --name "satis" --rm \
+  --env "SERVICE_80_NAME=satis" \
+  --env "SERVICE_ID=%H" \
+  --env "VIRTUAL_HOST=satis.ruhmesmeile.tools" \
+  --env "VIRTUAL_PORT=80" \
+  --env "LETSENCRYPT_HOST=satis.ruhmesmeile.tools" \
+  --env "LETSENCRYPT_EMAIL=jonas.ulrich@ruhmesmeile.com" \
+  --env "PRIVATE_REPO_DOMAIN_LIST=bitbucket.org gitlab.com github.com bitbucket.ruhmesmeile.tools:7999" \
+  --env "CRONTAB_FREQUENCY=-1" \
+  --env "MATRIX_HOST=matrix.ruhmesmeile.tools" \
+  --env "MATRIX_USERNAME=matrix" \
+  --env "MATRIX_PASSWORD=betatester" \
+  --label "container_group=typo3" \
+  --volume "/var/satis/data/composer:/satisfy/var/composer" \
+  --volume "/var/satis/data/dist:/satisfy/web/dist" \
+  --volume "/var/satis/data/p2:/satisfy/web/p2" \
+  --volume "/var/satis/config/nopass_rsa:/var/tmp/id" \
+  --volume "/var/satis/config/parameters.satisfy.yml:/satisfy/config/parameters.yml" \
+  --volume "/var/satis/config/config.json:/satisfy/config/satis.json" \
+  --expose "3000" \
+  ruhmesmeile/docker-satis:latest
+
+[X-Fleet]
+MachineMetadata=role=sat
+
+# TODO: move nopass_rsa into a better / safer place, see also: https://jira.ruhmesmeile.tools/browse/INFRA-48

@@ -1,0 +1,47 @@
+[Unit]
+Description=Mail container for TYPO3 development webpages
+Documentation=https://github.com/mailhog/MailHog
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+EnvironmentFile=/etc/environment
+Environment="ETCD_TLSKEY=/etc/ssl/etcd/calculonc-key.pem"
+Environment="ETCD_TLSPEM=/etc/ssl/etcd/calculonc.pem"
+Environment="ETCD_CACERT=/etc/ssl/etcd/ca.pem"
+
+ExecStartPre=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/tech/%i/status/mail/current "starting" > /dev/null'
+ExecStartPre=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/tech/%i/status/mail/starting "$(date +%%s)" > /dev/null'
+
+ExecStartPre=-/usr/bin/docker kill 'typo3-tech-mail-%i'
+ExecStartPre=-/usr/bin/docker rm 'typo3-tech-mail-%i' -v
+ExecStartPre=/usr/bin/docker pull mailhog/mailhog:latest
+
+ExecStart=/usr/bin/docker run \
+  --name "typo3-tech-mail-%i" --rm \
+  --env "SERVICE_1080_NAME=typo3-tech-mail-interface" \
+  --env "SERVICE_1025_NAME=typo3-tech-mail" \
+  --env "SERVICE_ID=%i" \
+  --env "VIRTUAL_HOST=%i.mail.ruhmesmeile.tech" \
+  --env "VIRTUAL_PORT=1080" \
+  --env "LETSENCRYPT_HOST=%i.mail.ruhmesmeile.tech" \
+  --env "LETSENCRYPT_EMAIL=jonas.ulrich@ruhmesmeile.com" \
+  --env "MH_API_BIND_ADDR=0.0.0.0:1080" \
+  --env "MH_UI_BIND_ADDR=0.0.0.0:1080" \
+  --expose "1080" \
+  --label "container_group=typo3" \
+  mailhog/mailhog:latest
+
+ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/tech/%i/status/mail/current "started" > /dev/null'
+ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/tech/%i/status/mail/started "$(date +%%s)" > /dev/null'
+
+ExecStopPost=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/tech/%i/status/mail/current "stopped $EXIT_STATUS" > /dev/null'
+ExecStopPost=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/tech/%i/status/mail/stopped "$(date +%%s)" > /dev/null'
+
+[X-Fleet]
+MachineMetadata=role=ttt

@@ -1,0 +1,26 @@
+[template]
+prefix = ""
+src = "prometheus.yml.tmpl"
+dest = "/var/prometheus/config/prometheus.yml"
+keys = [
+    "/skydns/local/ruhmesmeile/services/cadvisor",
+    "/skydns/local/ruhmesmeile/services/node-exporter",
+    "/skydns/local/ruhmesmeile/services/proxysql-exporter",
+    "/skydns/local/ruhmesmeile/services/mysqld-exporter",
+    "/skydns/local/ruhmesmeile/services/skydns-8081",
+    "/skydns/local/ruhmesmeile/services/etcd",
+    "/skydns/local/ruhmesmeile/services/typo3-v7-review-redis-exporter",
+    "/skydns/local/ruhmesmeile/services/typo3-v7-tech",
+    "/skydns/local/ruhmesmeile/services/typo3-v7-review",
+    "/skydns/local/ruhmesmeile/services/typo3-v7-tech-exporter",
+    "/skydns/local/ruhmesmeile/services/typo3-v7-review-exporter",
+    "/skydns/local/ruhmesmeile/services/typo3-review-redis-exporter",
+    "/skydns/local/ruhmesmeile/services/typo3-tech",
+    "/skydns/local/ruhmesmeile/services/typo3-review",
+    "/skydns/local/ruhmesmeile/services/typo3-tech-exporter",
+    "/skydns/local/ruhmesmeile/services/typo3-review-exporter",
+    "/skydns/local/ruhmesmeile/services/typo3-review-solr-exporter",
+    "/ruhmesmeile/projects/team/bonn",
+    "/ruhmesmeile/projects/team/cologne"
+]
+reload_cmd = "docker kill --signal=HUP prometheus"

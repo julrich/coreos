@@ -1,0 +1,40 @@
+[Unit]
+Description=SOLR container for TYPO3 (v7) producutions webpages
+Documentation=https://github.com/TYPO3-Solr/ext-solr
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+TimeoutSec=300s
+
+ExecStartPre=-/usr/bin/docker kill 'typo3-v7-solutions-solr-%i'
+ExecStartPre=-/usr/bin/docker network disconnect bridge 'typo3-v7-solutions-solr-%i' --force
+ExecStartPre=-/usr/bin/docker rm 'typo3-v7-solutions-solr-%i' -v
+ExecStartPre=/usr/bin/docker pull typo3solr/ext-solr:7.5.2
+
+ExecStart=/usr/bin/docker run \
+  --name "typo3-v7-solutions-solr-%i" --rm \
+  --env "SERVICE_8983_NAME=typo3-v7-solutions-solr" \
+  --env "SERVICE_ID=%i" \
+  --env "VIRTUAL_HOST=%i.solr.ruhmesmeile.solutions" \
+  --env "VIRTUAL_PORT=8983" \
+  --env "LETSENCRYPT_HOST=%i.solr.ruhmesmeile.solutions" \
+  --env "LETSENCRYPT_EMAIL=infrastructure@ruhmesmeile.com" \
+  --label "container_group=typo3" \
+  --volume "/srv/storage/solr/solutions/%i/data:/opt/solr/server/solr/data" \
+  typo3solr/ext-solr:7.5.2
+
+ExecStartPost=-/bin/bash -c '\
+  echo "%i"\':$$apr1$$GvBzdmf.$$Eld/pvDX6FR8zkxNeXxlZ.\' > /srv/storage/config/nginx/data/htpasswd/%i.solr.ruhmesmeile.solutions'
+
+ExecStartPost=-/bin/bash -c '\
+  sleep 2s && docker exec -t --user root typo3-v7-solutions-solr-%i bash -c \'\
+    chown -hR solr:solr /opt/solr/server/solr\''
+
+[X-Fleet]
+MachineMetadata=role=fdc

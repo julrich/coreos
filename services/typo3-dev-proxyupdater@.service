@@ -1,0 +1,39 @@
+[Unit]
+Description=Updates proxy (Nginx) IP in TYPO3 projects
+
+[Service]
+Type=oneshot
+
+ExecStart=/bin/bash -c '\
+  NGINX_PROXY_IP="$$(getent hosts momcorpfdc.nginx-balancer-https.services.ruhmesmeile.local | awk \'{ print $$1 }\')"; \
+  PROJECTS=($$(ls -d /srv/source/typo3/dev/*/)); \
+  PROJECT_KEY=""; \
+  REVERSE_PROXY_CONFIG=""; \
+  if [ ! $${#PROJECTS[@]} -eq 0 ]; then \
+    for PROJECT in "$${PROJECTS[@]}"; do \
+      PROJECT_KEY="$$(basename $$PROJECT)"; \
+      REVERSE_PROXY_CONFIG="<?php return [\'SYS\' => [\'reverseProxyIP\' => \'$$NGINX_PROXY_IP\'],];"; \
+      REVERSE_PROXY_CONFIG_SYSSECTIONONLY="    \'SYS\' => [\'reverseProxyIP\' => \'$$NGINX_PROXY_IP\'],;"; \
+      REVERSE_PROXY_CONFIG_VARONLY="        \'reverseProxyIP\' => \'$$NGINX_PROXY_IP\',"; \
+      if [ "$(docker ps --format {{.Names}} | grep typo3-dev-$$PROJECT_KEY)" ]; then \
+		    if [[ $$(wc -l < "/srv/source/typo3/dev/$$PROJECT_KEY/conf/override.php") -ge 4 ]]; then \
+          if grep -Fq "reverseProxyIP" "/srv/source/typo3/dev/$$PROJECT_KEY/conf/override.php"; then \
+		        SYS_LINE_NUMBER="$$(grep -n \"reverseProxyIp\" \"/srv/source/typo3/dev/$$PROJECT_KEY/conf/override.php\" | cut -d : -f 1)"; \
+            docker exec -t "typo3-dev-$$PROJECT_KEY" bash -c \'sed -i "$$1s/.*/$$0/"" conf/override.php;\' "$$REVERSE_PROXY_CONFIG_VARONLY" "$$SYS_LINE_NUMBER"; \
+		      elif grep -Fq "SYS" "/srv/source/typo3/dev/$$PROJECT_KEY/conf/override.php"; then \
+		        SYS_LINE_NUMBER="$$(grep -n \"SYS\" \"/srv/source/typo3/dev/$$PROJECT_KEY/conf/override.php\" | cut -d : -f 1)"; \
+            docker exec -t "typo3-dev-$$PROJECT_KEY" bash -c \'sed -i "$$(($$1 + 1))i$$0" conf/override.php;\' "$$REVERSE_PROXY_CONFIG_VARONLY" "$$SYS_LINE_NUMBER"; \
+          else \
+            docker exec -t "typo3-dev-$$PROJECT_KEY" bash -c \'sed -i "3i$$0" conf/override.php;\' "$$REVERSE_PROXY_CONFIG_SYSSECTIONONLY"; \
+           fi; \
+		    else \
+          docker exec -t "typo3-dev-$$PROJECT_KEY" bash -c \'echo "$$0" > conf/override.php;\' "$$REVERSE_PROXY_CONFIG"; \
+		    fi; \
+        echo "Updated IP for container typo3-dev-$$PROJECT_KEY"; \
+      fi; \
+    done; \
+  fi;'
+
+[X-Fleet]
+MachineMetadata=role=%i
+Global=true

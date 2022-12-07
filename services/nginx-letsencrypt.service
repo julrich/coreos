@@ -1,0 +1,35 @@
+[Unit]
+Description=Nginx Letsencrypt container
+Documentation=https://github.com/JrCs/docker-letsencrypt-nginx-proxy-companion
+
+After=docker.service
+After=nginx-gen.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+SuccessExitStatus=143
+
+ExecStartPre=-/usr/bin/docker kill nginx-letsencrypt
+ExecStartPre=-/usr/bin/docker rm nginx-letsencrypt
+ExecStartPre=/usr/bin/docker pull jrcs/letsencrypt-nginx-proxy-companion:v1.11
+ExecStartPre=/usr/bin/systemctl is-active docker.service
+ExecStartPre=/usr/bin/systemctl is-active nginx-gen.service
+
+ExecStart=/usr/bin/docker run \
+  --name "nginx-letsencrypt" \
+  --env "NGINX_DOCKER_GEN_CONTAINER=nginx-gen" \
+  --label "container_group=nginx-reverse" \
+  --volumes-from nginx \
+  --volume "/var/nginx/data/certs:/etc/nginx/certs:rw" \
+  --volume "/var/run/docker.sock:/var/run/docker.sock:ro" \
+  jrcs/letsencrypt-nginx-proxy-companion:v1.11
+
+ExecStop=-/usr/bin/docker stop nginx-letsencrypt
+
+[X-Fleet]
+Global=true
+MachineMetadata=role=hq
+MachineMetadata=role=doop
+MachineMetadata=role=spne

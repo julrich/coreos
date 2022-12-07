@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mail-servers>
+  <smtp-server>
+    <name>Bamboo</name>
+    <username>julrich</username>
+    <password>r/IPosexQ4nLcDXgnbLyjA==</password>
+    <defaultFrom>infrastructure@ruhmesmeile.com</defaultFrom>
+    <prefix>[RM-Bamboo]</prefix>
+    <hostname>smtp.sendgrid.net</hostname>
+    <sessionServer>false</sessionServer>
+    <port>25</port>
+    <tlsRequired>false</tlsRequired>
+  </smtp-server>
+</mail-servers>

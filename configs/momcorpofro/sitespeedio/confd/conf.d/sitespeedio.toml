@@ -1,0 +1,6 @@
+[template]
+src = "sites.txt.tmpl"
+dest = "/var/sitespeedio/config/sites.txt"
+keys = [
+    "/sitespeedio/project"
+]

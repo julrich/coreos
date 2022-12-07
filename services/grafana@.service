@@ -1,0 +1,45 @@
+[Unit]
+Description=Dashboard for usage and performance characteristics of running containers.
+Documentation=https://github.com/grafana/grafana/
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+ExecStartPre=-/bin/bash -c '\
+  if [ "%i" == "hq" ]; then \
+    /usr/bin/systemctl set-environment VIRTUAL_HOST=grafana.ruhmesmeile.tools,grafana2.ruhmesmeile.tools; \
+    /usr/bin/systemctl set-environment LETSENCRYPT_HOST=grafana.ruhmesmeile.tools,grafana2.ruhmesmeile.tools; \
+  else \
+    /usr/bin/systemctl set-environment VIRTUAL_HOST=grafana-%i.ruhmesmeile.tools,grafana2.ruhmesmeile.tools; \
+    /usr/bin/systemctl set-environment LETSENCRYPT_HOST=grafana-%i.ruhmesmeile.tools,grafana2.ruhmesmeile.tools; \
+  fi'
+ExecStartPre=-/usr/bin/docker kill grafana
+ExecStartPre=-/usr/bin/docker rm grafana
+ExecStartPre=/usr/bin/docker pull grafana/grafana:5.4.2
+
+ExecStart=/usr/bin/docker run \
+  --name "grafana" --rm \
+  --env "SERVICE_NAME=grafana" \
+  --env "SERVICE_ID=%H" \
+  --env "VIRTUAL_HOST" \
+  --env "VIRTUAL_PORT=3000" \
+  --env "LETSENCRYPT_HOST" \
+  --env "LETSENCRYPT_EMAIL=jonas.ulrich@ruhmesmeile.com" \
+  --env "GF_SECURITY_ADMIN_USER=grafana" \
+  --env "GF_SECURITY_ADMIN_PASSWORD=QitQtvM8Kg7LNx" \
+  --label "container_group=monitoring" \
+  --volume "/var/grafana/data:/var/lib/grafana" \
+  --volume "/var/grafana/config/grafana.ini:/etc/grafana/grafana.ini" \
+  --volume "/var/grafana/config/dashboards:/usr/share/grafana/dashboards" \
+  grafana/grafana:5.4.2
+
+ExecStop=-/usr/bin/docker stop grafana
+
+[X-Fleet]
+Global=true
+MachineMetadata=role=%i

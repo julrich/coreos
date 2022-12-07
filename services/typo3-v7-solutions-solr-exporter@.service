@@ -1,0 +1,20 @@
+[Unit]
+Description=Prometheus exporter for SOLR container for TYPO3 (v7) producution webpages
+Documentation=https://lucene.apache.org/solr/guide/7_3/monitoring-solr-with-prometheus-and-grafana.html
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+ExecStart=/bin/bash -c '\
+  until [ "$$(docker inspect -f {{.State.Running}} typo3-v7-review-solr%i)" == "true" ]; do sleep 1; done; \
+  docker exec -t typo3-v7-solutions-solr-%i bash -c \'\
+    cd contrib/prometheus-exporter; \
+    ./bin/solr-exporter -p 9854 -b http://%i.typo3-v7-solutions-solr.services.ruhmesmeile.local:8983/solr -f ./conf/solr-exporter-config.xml'; \';'
+
+[X-Fleet]
+MachineOf=typo3-v7-solutions-solr@%i.service

@@ -1,0 +1,52 @@
+[Unit]
+Description=Atlassian JIRA Software container
+Documentation=https://github.com/cptactionhank/docker-atlassian-jira-software
+
+Requires=docker.service
+Requires=postgresql94.service
+
+After=docker.service
+After=postgresql94.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+TimeoutSec=300s
+
+ExecStartPre=/usr/bin/docker pull cptactionhank/atlassian-jira-software:7.8.0
+ExecStartPre=-/usr/bin/docker rm --volumes --force "jira"
+ExecStartPre=/usr/bin/docker create \
+  --name "jira" \
+  --env "SERVICE_NAME=jira" \
+  --env "SERVICE_ID=%H" \
+  --env "CATALINA_OPTS=-Xms1024m -Xmx1024m -Datlassian.plugins.enable.wait=300" \
+  --env "VIRTUAL_HOST=jira.ruhmesmeile.tools,jira3.ruhmesmeile.tools" \
+  --env "VIRTUAL_PORT=8080" \
+  --env "LETSENCRYPT_HOST=jira.ruhmesmeile.tools,jira3.ruhmesmeile.tools" \
+  --env "LETSENCRYPT_EMAIL=jonas.ulrich@ruhmesmeile.com" \
+  --env "X_PROXY_NAME=jira.ruhmesmeile.tools" \
+  --env "X_PROXY_PORT=443" \
+  --env "X_PROXY_SCHEME=https" \
+  --label "container_group=infrastructure" \
+  --volume "/var/atlassian/jira/data:/var/atlassian/jira" \
+  --volume "/var/atlassian/jira/config/crowd.properties:/opt/atlassian/jira/atlassian-jira/WEB-INF/classes/crowd.properties" \
+  --volume "/var/atlassian/jira/config/seraph-config.xml:/opt/atlassian/jira/atlassian-jira/WEB-INF/classes/seraph-config.xml" \
+  --publish "8080:8080" \
+  --restart=no \
+  cptactionhank/atlassian-jira-software:7.8.0
+
+ExecStart=/usr/bin/docker start --attach "jira"
+
+ExecStop=/usr/bin/docker stop --time 30 "jira"
+
+[X-Fleet]
+MachineMetadata=role=hq
+
+# Auf dem Server ist es initial notwendig die Ordnerrechte exakt einzustellen. Interner User "daemon" muss r/w auf alles unter /var/atlassian/jira haben:
+#
+# Lokaler User "root":
+# $ docker exec -ti --user root jira bash
+#
+# Lokaler User "daemon":
+# $ docker exec -ti jira bash

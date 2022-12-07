@@ -1,0 +1,32 @@
+[Unit]
+Description=XtraDB MySQL Cluster Backup
+Documentation=https://www.percona.com/doc/percona-xtrabackup/LATEST/index.html
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Type=oneshot
+TimeoutSec=2h
+
+ExecStartPre=/bin/bash -c 'rm -rf /var/xtradb-node/backup/*'
+ExecStartPre=-/usr/bin/docker kill 'xtradb-backup'
+ExecStartPre=-/usr/bin/docker rm 'xtradb-backup' -v
+ExecStartPre=/usr/bin/docker pull perconalab/percona-xtrabackup:latest
+
+ExecStart=/usr/bin/docker run \
+  --name "xtradb-backup" --rm \
+  --volume "/var/xtradb-node/data:/var/lib/mysql" \
+  --volume "/var/xtradb-node/backup:/xtrabackup_backupfiles" \
+  --label "container_group=typo3" \
+  perconalab/percona-xtrabackup:latest \
+  --backup \
+  --host=momcorp%i.xtradb-node.services.ruhmesmeile.local \
+  --user=root \
+  --password=BXMzpQ2neehQF7
+
+[X-Fleet]
+MachineMetadata=role=%i
+
+# TODO remove credentials, move to Vault

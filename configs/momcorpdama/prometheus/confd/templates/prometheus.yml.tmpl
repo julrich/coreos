@@ -1,0 +1,442 @@
+global:
+  scrape_interval:     15s # By default, scrape targets every 15 seconds.
+  evaluation_interval: 15s
+
+  # Attach these labels to any time series or alerts when communicating with
+  # external systems (federation, remote storage, Alertmanager).
+  external_labels:
+    monitor: 'rm-monitor'
+
+rule_files:
+  - '/etc/prometheus/rules/prometheus.rules.yml'
+  - '/etc/prometheus/rules/alert.rules_container-groups.yml'
+  - '/etc/prometheus/rules/alert.rules_containers.yml'
+  - '/etc/prometheus/rules/alert.rules_nodes.yml'
+  - '/etc/prometheus/rules/alert.rules_mysql.yml'
+  - '/etc/prometheus/rules/alert.rules_typo3.yml'
+
+alerting:
+  alertmanagers:
+  - dns_sd_configs:
+    - names:
+        - 'alertmanager.services.ruhmesmeile.local'
+
+# A scrape configuration containing exactly one endpoint to scrape:
+# Here it's Prometheus itself.
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: 'prometheus'
+
+    # Override the global default and scrape targets from this job every 5 seconds.
+    scrape_interval: 5s
+
+    tls_config:
+      ca_file: /etc/ssl/etcd/ca.pem
+      cert_file: /etc/ssl/etcd/calculonc.pem
+      key_file: /etc/ssl/etcd/calculonc-key.pem
+
+    dns_sd_configs:
+      - names:
+          - 'momcorpdama.prometheus.services.ruhmesmeile.local'
+
+    relabel_configs:
+      - source_labels: ['__meta_dns_name']
+        regex: '(.+?)\.prometheus\.services\.ruhmesmeile\.local'
+        target_label: 'instance'
+        replacement: '$1'
+      - source_labels: ['__address__']
+        target_label: 'address'
+  - job_name: 'skydns'
+    scheme: 'http'
+
+    scrape_interval: 10s
+
+    tls_config:
+      ca_file: /etc/ssl/etcd/ca.pem
+      cert_file: /etc/ssl/etcd/calculonc.pem
+      key_file: /etc/ssl/etcd/calculonc-key.pem
+
+    dns_sd_configs:
+      - names:
+        {{- range gets "/skydns/local/ruhmesmeile/services/skydns-8081/*"}}
+          - '{{base .Key}}.skydns-8081.services.ruhmesmeile.local'
+        {{- end}}
+
+    relabel_configs:
+      - source_labels: ['__meta_dns_name']
+        regex: '(.+?)\.skydns-8081\.services\.ruhmesmeile\.local'
+        target_label: 'instance'
+        replacement: '$1'
+      - source_labels: ['__address__']
+        target_label: 'address'
+  - job_name: 'docker'
+    scheme: 'http'
+
+    scrape_interval: 10s
+
+    tls_config:
+      ca_file: /etc/ssl/etcd/ca.pem
+      cert_file: /etc/ssl/etcd/calculonc.pem
+      key_file: /etc/ssl/etcd/calculonc-key.pem
+
+    dns_sd_configs:
+      - names:
+        {{- range gets "/skydns/local/ruhmesmeile/services/cadvisor/*"}}
+          - '{{base .Key}}.cadvisor.services.ruhmesmeile.local'
+        {{- end}}
+
+    relabel_configs:
+      - source_labels: ['__meta_dns_name']
+        regex: '(.+?)\.cadvisor\.services\.ruhmesmeile\.local'
+        target_label: 'instance'
+        replacement: '$1'
+      - source_labels: ['__address__']
+        target_label: 'address'
+  - job_name: 'machine'
+    scheme: 'http'
+
+    scrape_interval: 10s
+
+    tls_config:
+      ca_file: /etc/ssl/etcd/ca.pem
+      cert_file: /etc/ssl/etcd/calculonc.pem
+      key_file: /etc/ssl/etcd/calculonc-key.pem
+
+    dns_sd_configs:
+      - names:
+        {{- range gets "/skydns/local/ruhmesmeile/services/node-exporter/*"}}
+          - '{{base .Key}}.node-exporter.services.ruhmesmeile.local'
+        {{- end}}
+
+    relabel_configs:
+      - source_labels: ['__meta_dns_name']
+        regex: '(.+?)\.node-exporter\.services\.ruhmesmeile\.local'
+        target_label: 'instance'
+        replacement: '$1'
+      - source_labels: ['__address__']
+        target_label: 'address'
+  - job_name: 'jira'
+    scheme: http
+
+    scrape_interval: 60s
+    metrics_path: '/plugins/servlet/prometheus/metrics'
+
+    static_configs:
+      - targets: ['jira.services.ruhmesmeile.local:8080']
+  - job_name: 'confluence'
+    scheme: http
+
+    scrape_interval: 60s
+    metrics_path: '/plugins/servlet/prometheus/metrics'
+
+    static_configs:
+      - targets: ['confluence.services.ruhmesmeile.local:8090']
+  - job_name: 'proxysql'
+    scheme: 'http'
+
+    scrape_interval: 10s
+
+    tls_config:
+      ca_file: /etc/ssl/etcd/ca.pem
+      cert_file: /etc/ssl/etcd/calculonc.pem
+      key_file: /etc/ssl/etcd/calculonc-key.pem
+
+    dns_sd_configs:
+      - names:
+        {{- range gets "/skydns/local/ruhmesmeile/services/proxysql-exporter/*"}}
+          - '{{base .Key}}.proxysql-exporter.services.ruhmesmeile.local'
+        {{- end}}
+
+    relabel_configs:
+      - source_labels: ['__meta_dns_name']
+        regex: '(.+?)\.proxysql-exporter\.services\.ruhmesmeile\.local'
+        target_label: 'instance'
+        replacement: '$1'
+      - source_labels: ['__address__']
+        target_label: 'address'
+  - job_name: 'mysql-hr'
+    metrics_path: /metrics-hr
+
+    scrape_interval: 10s
+
+    tls_config:
+      ca_file: /etc/ssl/etcd/ca.pem
+      cert_file: /etc/ssl/etcd/calculonc.pem
+      key_file: /etc/ssl/etcd/calculonc-key.pem
+
+    dns_sd_configs:
+      - names:
+        {{- range gets "/skydns/local/ruhmesmeile/services/mysqld-exporter/*"}}
+          - '{{base .Key}}.mysqld-exporter.services.ruhmesmeile.local'
+        {{- end}}
+
+    relabel_configs:
+      - target_label: 'job'
+        replacement: 'mysql'
+      - source_labels: ['__meta_dns_name']
+        regex: '(.+?)\.mysqld-exporter\.services\.ruhmesmeile\.local'
+        target_label: 'instance'
+        replacement: '$1'
+      - source_labels: ['__address__']
+        target_label: 'address'
+  - job_name: 'mysql-mr'
+    metrics_path: /metrics-mr
+    scrape_interval: 20s
+    scrape_timeout: 5s
+
+    tls_config:
+      ca_file: /etc/ssl/etcd/ca.pem
+      cert_file: /etc/ssl/etcd/calculonc.pem
+      key_file: /etc/ssl/etcd/calculonc-key.pem
+
+    dns_sd_configs:
+      - names:
+        {{- range gets "/skydns/local/ruhmesmeile/services/mysqld-exporter/*"}}
+          - '{{base .Key}}.mysqld-exporter.services.ruhmesmeile.local'
+        {{- end}}
+
+    relabel_configs:
+      - target_label: 'job'
+        replacement: 'mysql'
+      - source_labels: ['__meta_dns_name']
+        regex: '(.+?)\.mysqld-exporter\.services\.ruhmesmeile\.local'
+        target_label: 'instance'
+        replacement: '$1'
+      - source_labels: ['__address__']
+        target_label: 'address'
+  - job_name: 'mysql-lr'
+    metrics_path: /metrics-lr
+    scrape_interval: 60s
+    scrape_timeout: 20s
+
+    tls_config:
+      ca_file: /etc/ssl/etcd/ca.pem
+      cert_file: /etc/ssl/etcd/calculonc.pem
+      key_file: /etc/ssl/etcd/calculonc-key.pem
+
+    dns_sd_configs:
+      - names:
+        {{- range gets "/skydns/local/ruhmesmeile/services/mysqld-exporter/*"}}
+          - '{{base .Key}}.mysqld-exporter.services.ruhmesmeile.local'
+        {{- end}}
+
+    relabel_configs:
+      - target_label: 'job'
+        replacement: 'mysql'
+      - source_labels: ['__meta_dns_name']
+        regex: '(.+?)\.mysqld-exporter\.services\.ruhmesmeile\.local'
+        target_label: 'instance'
+        replacement: '$1'
+      - source_labels: ['__address__']
+        target_label: 'address'
+  - job_name: 'vault'
+    scrape_interval: 5s
+
+    static_configs:
+      - targets: ['momcorphq.vault-exporter-prometheus.services.ruhmesmeile.local:9102']
+  - job_name: redis-exporter
+    scrape_interval: 120s
+    scrape_timeout: 60s
+
+    tls_config:
+      ca_file: /etc/ssl/etcd/ca.pem
+      cert_file: /etc/ssl/etcd/calculonc.pem
+      key_file: /etc/ssl/etcd/calculonc-key.pem
+
+    dns_sd_configs:
+      - names:
+        {{- range gets "/skydns/local/ruhmesmeile/services/typo3-v7-review-redis-exporter/*"}}
+          - '{{base .Key}}.typo3-v7-review-redis-exporter.services.ruhmesmeile.local'
+        {{- end}}
+        {{- range gets "/skydns/local/ruhmesmeile/services/typo3-review-redis-exporter/*"}}
+          - '{{base .Key}}.typo3-review-redis-exporter.services.ruhmesmeile.local'
+        {{- end}}
+  - job_name: typo3-exporter
+    scrape_interval: 2s
+    scrape_timeout: 1s
+
+    tls_config:
+      ca_file: /etc/ssl/etcd/ca.pem
+      cert_file: /etc/ssl/etcd/calculonc.pem
+      key_file: /etc/ssl/etcd/calculonc-key.pem
+
+    dns_sd_configs:
+      - names:
+        {{- range gets "/skydns/local/ruhmesmeile/services/typo3-v7-tech-exporter/*"}}
+          - '{{base .Key}}.typo3-v7-tech-exporter.services.ruhmesmeile.local'
+        {{- end}}
+        {{- range gets "/skydns/local/ruhmesmeile/services/typo3-v7-review-exporter/*"}}
+          - '{{base .Key}}.typo3-v7-review-exporter.services.ruhmesmeile.local'
+        {{- end}}
+        {{- range gets "/skydns/local/ruhmesmeile/services/typo3-tech-exporter/*"}}
+          - '{{base .Key}}.typo3-tech-exporter.services.ruhmesmeile.local'
+        {{- end}}
+        {{- range gets "/skydns/local/ruhmesmeile/services/typo3-review-exporter/*"}}
+          - '{{base .Key}}.typo3-review-exporter.services.ruhmesmeile.local'
+        {{- end}}
+  - job_name: typo3-blackbox-exporter
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    metrics_path: /probe
+
+    tls_config:
+      ca_file: /etc/ssl/etcd/ca.pem
+      cert_file: /etc/ssl/etcd/calculonc.pem
+      key_file: /etc/ssl/etcd/calculonc-key.pem
+
+    static_configs:
+      - targets:
+        {{- range gets "/skydns/local/ruhmesmeile/services/typo3-v7-tech/*"}}
+          - 'https://{{base .Key}}.typo3.ruhmesmeile.tech'
+        {{- end}}
+        {{- range gets "/skydns/local/ruhmesmeile/services/typo3-v7-review/*"}}
+          - 'https://{{base .Key}}.typo3.ruhmesmeile.review'
+        {{- end}}
+        {{- range gets "/skydns/local/ruhmesmeile/services/typo3-tech/*"}}
+          - 'https://{{base .Key}}.typo3.ruhmesmeile.tech'
+        {{- end}}
+        {{- range gets "/skydns/local/ruhmesmeile/services/typo3-review/*"}}
+          - 'https://{{base .Key}}.typo3.ruhmesmeile.review'
+        {{- end}}
+        {{- range gets "/skydns/local/ruhmesmeile/services/typo3-v7-tech/*"}}
+          - 'https://{{base .Key}}.typo3.ruhmesmeile.tech/typo3'
+        {{- end}}
+        {{- range gets "/skydns/local/ruhmesmeile/services/typo3-v7-review/*"}}
+          - 'https://{{base .Key}}.typo3.ruhmesmeile.review/typo3'
+        {{- end}}
+        {{- range gets "/skydns/local/ruhmesmeile/services/typo3-tech/*"}}
+          - 'https://{{base .Key}}.typo3.ruhmesmeile.tech/typo3'
+        {{- end}}
+        {{- range gets "/skydns/local/ruhmesmeile/services/typo3-review/*"}}
+          - 'https://{{base .Key}}.typo3.ruhmesmeile.review/typo3'
+        {{- end}}
+    relabel_configs:
+      - source_labels: ['__address__']
+        target_label: '__param_target'
+      - source_labels: ['__param_target']
+        target_label: 'instance'
+      - target_label: '__address__'
+        replacement: 'typo3-blackbox-exporter.services.ruhmesmeile.local:9115'
+    metric_relabel_configs:
+      - source_labels: ['instance']
+        regex: 'https:\/\/.+\.typo3\.ruhmesmeile\.(.+)'
+        target_label: 'environment'
+        replacement: '$1'
+      - source_labels: ['instance']
+        regex: 'https:\/\/(.+?)\.typo3\.ruhmesmeile\..+'
+        target_label: 'projectkey'
+        replacement: '$1'
+      - source_labels: ['instance']
+        regex: 'https:\/\/(.+?)\.typo3\.ruhmesmeile\.(.+)'
+        target_label: 'title'
+        replacement: '$1.$2'
+  - job_name: solr-blackbox-exporter
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    metrics_path: /probe
+
+    tls_config:
+      ca_file: /etc/ssl/etcd/ca.pem
+      cert_file: /etc/ssl/etcd/calculonc.pem
+      key_file: /etc/ssl/etcd/calculonc-key.pem
+
+    static_configs:
+      - targets:
+        {{- range gets "/ruhmesmeile/projects/team/bonn/review/solr/*"}}
+          - 'https://{{base .Key}}.solr.ruhmesmeile.review'
+        {{- end}}
+        {{- range gets "/ruhmesmeile/projects/team/cologne/review/solr/*"}}
+          - 'https://{{base .Key}}.solr.ruhmesmeile.review'
+        {{- end}}
+    relabel_configs:
+      - source_labels: ['__address__']
+        target_label: '__param_target'
+      - source_labels: ['__param_target']
+        target_label: 'instance'
+      - source_labels: ['instance']
+        regex: 'https:\/\/({{range gets "/ruhmesmeile/projects/team/bonn/review/solr/*"}}{{base .Key}}|{{end}}dummy)\.solr\.ruhmesmeile\.(?:{{range lsdir "/ruhmesmeile/projects/team/bonn"}}{{.}}|{{end}}dummy)'
+        target_label: 'team'
+        replacement: 'bonn'
+      - source_labels: ['instance']
+        regex: 'https:\/\/({{range gets "/ruhmesmeile/projects/team/cologne/review/solr/*"}}{{base .Key}}|{{end}}dummy)\.solr\.ruhmesmeile\.(?:{{range lsdir "/ruhmesmeile/projects/team/cologne"}}{{.}}|{{end}}dummy)'
+        target_label: 'team'
+        replacement: 'cologne'
+      - target_label: '__address__'
+        replacement: 'typo3-blackbox-exporter.services.ruhmesmeile.local:9115'
+    metric_relabel_configs:
+      - source_labels: ['instance']
+        regex: 'https:\/\/.+\.solr\.ruhmesmeile\.(.+)'
+        target_label: 'environment'
+        replacement: '$1'
+      - source_labels: ['instance']
+        regex: 'https:\/\/(.+?)\.solr\.ruhmesmeile\..+'
+        target_label: 'projectkey'
+        replacement: '$1'
+      - source_labels: ['instance']
+        regex: 'https:\/\/(.+?)\.solr\.ruhmesmeile\.(.+)'
+        target_label: 'title'
+        replacement: '$1.$2'
+#  - job_name: typo3-solr-exporter
+#    scrape_interval: 60s
+#    scrape_timeout: 15s
+#    metrics_path: /
+#
+#    tls_config:
+#      ca_file: /etc/ssl/etcd/ca.pem
+#      cert_file: /etc/ssl/etcd/calculonc.pem
+#      key_file: /etc/ssl/etcd/calculonc-key.pem
+#
+#    static_configs:
+#      - targets:
+#        {{- range gets "/ruhmesmeile/projects/team/bonn/review/solr/*"}}
+#          - '{{base .Key}}.typo3-review-solr-exporter.services.ruhmesmeile.local:9854'
+#        {{- end}}
+#        {{- range gets "/ruhmesmeile/projects/team/cologne/review/solr/*"}}
+#          - '{{base .Key}}.typo3-review-solr-exporter.services.ruhmesmeile.local:9854'
+#        {{- end}}
+        #{{- range gets "/ruhmesmeile/projects/team/bonn/solutions/solr/*"}}
+        #  - '{{base .Key}}.typo3-solutions-solr-exporter.services.ruhmesmeile.local:9854'
+        #{{- end}}
+        #{{- range gets "/ruhmesmeile/projects/team/cologne/solutions/solr/*"}}
+        #  - '{{base .Key}}.typo3-solutions-solr-exporter.services.ruhmesmeile.local:9854'
+        #{{- end}}
+#    relabel_configs:
+#      - source_labels: ['__address__']
+#        regex: '(.+?)\.typo3-(?:{{range lsdir "/ruhmesmeile/projects/team/bonn"}}{{.}}|{{end}}{{range lsdir "/ruhmesmeile/projects/team/cologne"}}{{.}}|{{end}}dummy)-solr-exporter\.services\.ruhmesmeile\.local:9854'
+#        target_label: 'projectKey'
+#        replacement: '$1'
+#      - source_labels: ['__address__']
+#        regex: '({{range gets "/ruhmesmeile/projects/team/bonn/review/solr/*"}}{{base .Key}}|{{end}}dummy)\.typo3-(?:{{range lsdir "/ruhmesmeile/projects/team/bonn"}}{{.}}|{{end}}dummy)-solr-exporter\.services\.ruhmesmeile\.local:9854'
+#        target_label: 'team'
+#        replacement: 'bonn'
+#      - source_labels: ['__address__']
+#        regex: '({{range gets "/ruhmesmeile/projects/team/cologne/review/solr/*"}}{{base .Key}}|{{end}}dummy)\.typo3-(?:{{range lsdir "/ruhmesmeile/projects/team/cologne"}}{{.}}|{{end}}dummy)-solr-exporter\.services\.ruhmesmeile\.local:9854'
+#        target_label: 'team'
+#        replacement: 'cologne'
+#      - source_labels: ['__address__']
+#        regex: '(?:.*)\.typo3-({{range lsdir "/ruhmesmeile/projects/team/bonn"}}{{.}}|{{end}}{{range lsdir "/ruhmesmeile/projects/team/cologne"}}{{.}}|{{end}}dummy)-solr-exporter\.services\.ruhmesmeile\.local:9854'
+#        target_label: 'environment'
+#        replacement: '$1'
+  - job_name: 'etcd'
+    scheme: 'https'
+
+    scrape_interval: 5s
+
+    tls_config:
+      ca_file: /etc/ssl/etcd/ca.pem
+      cert_file: /etc/ssl/etcd/calculonc.pem
+      key_file: /etc/ssl/etcd/calculonc-key.pem
+
+    dns_sd_configs:
+      - names:
+        {{- range gets "/skydns/local/ruhmesmeile/services/etcd/*"}}
+          - '{{base .Key}}.etcd.services.ruhmesmeile.local'
+        {{- end}}
+
+    relabel_configs:
+      - source_labels: ['__meta_dns_name']
+        regex: '(.+?)\.etcd\.services\.ruhmesmeile\.local'
+        target_label: 'instance'
+        replacement: '$1'
+      - source_labels: ['__address__']
+        target_label: 'address'

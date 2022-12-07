@@ -1,0 +1,51 @@
+[Unit]
+Description=Container for Blackfire PHP Profiling-Agent
+Documentation=https://blackfire.io/docs/integrations/docker
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+ExecStartPre=-/usr/bin/docker kill 'blackfire'
+ExecStartPre=-/usr/bin/docker rm 'blackfire'
+ExecStartPre=/usr/bin/docker pull blackfire/blackfire
+
+ExecStart=/usr/bin/docker run \
+  --name "blackfire" \
+  --env "SERVICE_8707_NAME=blackfire" \
+  --env "SERVICE_ID=%i" \
+  --env "BLACKFIRE_SERVER_ID=de447b39-549d-4345-ada2-4a00db1f9210" \
+  --env "BLACKFIRE_SERVER_TOKEN=eb32800e189b60590c951e65d1f60e93c097ba7b5b57fbc6107ddcd594bddb3d" \
+  --label "container_group=typo3" \
+  blackfire/blackfire
+
+[X-Fleet]
+MachineMetadata=role=%i
+
+# ### To run a profile use the following command:
+#
+# First variant can be used on URLs that are not cached yet (no preflight request), to test caching behaviour itself.
+# Second variant runs a preflight request first, followed by 10 samples for the chosen URL.
+#
+# see also: https://blackfire.io/docs/integrations/docker
+#
+# Variant 1:
+# 
+# local/$: ssh momcorpttt1
+# momcorpfdc/$: sudo su
+# momcorpfdc/$: export BLACKFIRE_CLIENT_ID=c5383257-ab58-4e57-8944-0af4783c6734
+# momcorpfdc/$: export BLACKFIRE_CLIENT_TOKEN=14da65dafde7aafe1f3c000db3aaa453158b853e042262a0a7da78d4eb368aa5
+# momcorpfdc/$: docker run -it --rm -e BLACKFIRE_CLIENT_ID -e BLACKFIRE_CLIENT_TOKEN blackfire/blackfire blackfire --env=TYPO3 run sh -c 'curl -u user:betatester -H "X-Blackfire-Query: $BLACKFIRE_QUERY" https://PROJECTKEY.typo3.ruhmesmeile.review/ > /dev/null'
+#
+#
+# Variant 2:
+# 
+# local/$: ssh momcorpttt1
+# momcorpfdc/$: sudo su
+# momcorpfdc/$: export BLACKFIRE_CLIENT_ID=c5383257-ab58-4e57-8944-0af4783c6734
+# momcorpfdc/$: export BLACKFIRE_CLIENT_TOKEN=14da65dafde7aafe1f3c000db3aaa453158b853e042262a0a7da78d4eb368aa5
+# momcorpfdc/$: docker run -it --rm -e BLACKFIRE_CLIENT_ID -e BLACKFIRE_CLIENT_TOKEN blackfire/blackfire blackfire --samples 10 --env=TYPO3 curl -u user:betatester https://PROJECTKEY.typo3.ruhmesmeile.review/

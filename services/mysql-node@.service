@@ -1,0 +1,31 @@
+[Unit]
+Description=Single MySQL Node
+Documentation=https://github.com/percona/percona-docker/tree/main/percona-server-5.7
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+TimeoutStartSec=0
+
+ExecStartPre=-/usr/bin/docker kill mysql-node
+ExecStartPre=-/usr/bin/docker rm mysql-node
+ExecStartPre=/usr/bin/docker pull percona:5.7
+
+ExecStart=/usr/bin/docker run \
+  --name "mysql-node" \
+  --env "SERVICE_3306_NAME=mysql" \
+  --env "SERVICE_ID=%H" \
+  --env "MYSQL_ROOT_PASSWORD=BXMzpQ2neehQF7" \
+  --label "container_group=typo3" \
+  --volume "/var/mysql-node/config/node.cnf:/etc/mysql/conf.d/node.cnf" \
+  --volume "/var/mysql-node/data:/var/lib/mysql" \
+  --publish "3306:3306" \
+  percona:5.7
+
+ExecStop=-/usr/bin/docker stop mysql-node
+
+[X-Fleet]
+MachineMetadata=role=%i
+

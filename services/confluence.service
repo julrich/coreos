@@ -1,0 +1,73 @@
+[Unit]
+Description=Atlassian Confluence container
+Documentation=https://bitbucket.org/atlassian-docker/docker-atlassian-confluence-server/src/base-6-adoptopenjdk8/
+
+Requires=docker.service
+Requires=postgresql94.service
+
+After=docker.service
+After=postgresql94.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+TimeoutSec=300s
+
+ExecStartPre=-/usr/bin/docker kill "confluence-official"
+ExecStartPre=-/usr/bin/docker rm --volumes --force "confluence-official"
+ExecStartPre=/usr/bin/docker pull ruhmesmeile/docker-atlassian-confluence-server:latest
+ExecStart=/usr/bin/docker run \
+  --name "confluence-official" --rm \
+  --env "SERVICE_8090_NAME=confluence" \
+  --env "SERVICE_8091_NAME=synchrony" \
+  --env "SERVICE_ID=%H" \
+  --env "CATALINA_OPTS=-Xms4096m -Xmx4096m -Datlassian.plugins.enable.wait=300 -D -Dreza.memory.max=2g -Dsynchrony.proxy.enabled=True" \
+  --env "VIRTUAL_HOST=confluence.ruhmesmeile.tools,confluence3.ruhmesmeile.tools" \
+  --env "VIRTUAL_PORT=8090" \
+  --env "LETSENCRYPT_HOST=confluence.ruhmesmeile.tools,confluence3.ruhmesmeile.tools" \
+  --env "LETSENCRYPT_EMAIL=jonas.ulrich@ruhmesmeile.com" \
+  --env "X_PROXY_NAME=confluence.ruhmesmeile.tools" \
+  --env "X_PROXY_PORT=443" \
+  --env "X_PROXY_SCHEME=https" \
+  --env "CATALINA_CONNECTOR_PROXYNAME=confluence.ruhmesmeile.tools" \
+  --env "CATALINA_CONNECTOR_PROXYPORT=443" \
+  --env "CATALINA_CONNECTOR_SCHEME=https" \
+  --env "CATALINA_CONNECTOR_SECURE=true" \
+  --env "JVM_MINIMUM_MEMORY=4096m" \
+  --env "JVM_MAXIMUM_MEMORY=4096m" \
+  --env "ATL_PROXY_NAME=confluence.ruhmesmeile.tools" \
+  --env "ATL_PROXY_PORT=443" \
+  --env "ATL_TOMCAT_SCHEME=https" \
+  --env "ATL_TOMCAT_SECURE=true" \
+  --env "ATL_JDBC_URL=jdbc:postgresql://postgres.services.ruhmesmeile.local:5432/confluence" \
+  --env "ATL_JDBC_USER=confuser" \
+  --env "ATL_JDBC_PASSWORD=uocorislidra" \
+  --env "ATL_DB_TYPE=postgresql" \
+  --label "container_group=infrastructure" \
+  --volume "/var/atlassian/confluence/data:/var/atlassian/application-data/confluence" \
+  --volume "/var/atlassian/confluence/config/crowd.properties:/opt/atlassian/confluence/confluence/WEB-INF/classes/crowd.properties" \
+  --volume "/var/atlassian/confluence/config/seraph-config.xml:/opt/atlassian/confluence/confluence/WEB-INF/classes/seraph-config.xml" \
+  --volume "/var/atlassian/confluence/config/login.vm:/opt/atlassian/confluence/confluence/login.vm" \
+  --publish "8090:8090" \
+  --publish "8091:8091" \
+  ruhmesmeile/docker-atlassian-confluence-server:latest
+
+ExecStop=/usr/bin/docker stop "confluence-official"
+
+[X-Fleet]
+MachineMetadata=role=hq
+
+# Auf dem Server ist es initial notwendig die Ordnerrechte exakt einzustellen. Interner User "daemon" muss r/w auf alles unter /var/atlassian/confluence haben:
+#
+# Lokaler User "root":
+# $ docker exec -ti --user root confluence bash
+#
+# Lokaler User "daemon":
+# $ docker exec -ti confluence bash
+#
+# Falls das kollaborative Bearbeiten von Seiten nicht geht (also Seiten nicht mehr editierbar sind / der Editor nicht mehr lädt), kann man versuchen den nginx.service auf der Maschine neu zu starten. Wenn das auch nichts bringt, kann ein Administrator entsprechend das kollaborative Bearbeiten abschalten:
+#
+# local/$: ssh momcorphq
+# momcorpfdc/$: sudo su
+# momcorpfdc/$: systemctl restart nginx.service

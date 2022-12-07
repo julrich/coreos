@@ -1,0 +1,25 @@
+[Unit]
+Description=TIKA container for TYPO3 master webpages
+Documentation=https://github.com/LogicalSpark/docker-tikaserver
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+ExecStartPre=-/usr/bin/docker kill 'tika-review'
+ExecStartPre=-/usr/bin/docker rm 'tika-review' -v
+ExecStartPre=/usr/bin/docker pull logicalspark/docker-tikaserver:latest
+
+ExecStart=/usr/bin/docker run \
+  --name "tika-review" --rm \
+  --env "SERVICE_9998_NAME=typo3-review-tika" \
+  --env "SERVICE_ID=%i" \
+  --label "container_group=typo3" \
+  logicalspark/docker-tikaserver:latest
+
+[X-Fleet]
+MachineMetadata=role=fdc

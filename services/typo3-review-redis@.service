@@ -1,0 +1,52 @@
+[Unit]
+Description=Redis container for TYPO3 master webpages
+Documentation=https://hub.docker.com/_/redis/
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+EnvironmentFile=/etc/environment
+Environment="ETCD_TLSKEY=/etc/ssl/etcd/calculonc-key.pem"
+Environment="ETCD_TLSPEM=/etc/ssl/etcd/calculonc.pem"
+Environment="ETCD_CACERT=/etc/ssl/etcd/ca.pem"
+
+ExecStartPre=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/review/%i/status/redis/current "starting" > /dev/null'
+ExecStartPre=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/review/%i/status/redis/starting "$(date +%%s)" > /dev/null'
+
+ExecStartPre=-/usr/bin/docker kill 'typo3-review-redis-%i'
+ExecStartPre=-/usr/bin/docker rm 'typo3-review-redis-%i' -v
+ExecStartPre=/usr/bin/docker pull redis:4.0.1
+
+ExecStart=/usr/bin/docker run \
+  --privileged \
+  --sysctl net.core.somaxconn=1024 \
+  --name "typo3-review-redis-%i" --rm \
+  --env "SERVICE_6379_NAME=typo3-review-redis" \
+  --env "SERVICE_ID=%i" \
+  --label "container_group=typo3" \
+  redis:4.0.1
+
+ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/review/%i/status/redis/current "started" > /dev/null'
+ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/review/%i/status/redis/started "$(date +%%s)" > /dev/null'
+
+ExecStopPost=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/review/%i/status/redis/current "stopped $EXIT_STATUS" > /dev/null'
+ExecStopPost=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/review/%i/status/redis/stopped "$(date +%%s)" > /dev/null'
+
+ExecStartPost=-/bin/bash -c '\
+  /opt/bin/fleetctl destroy typo3-review-redis-exporter@%i.service || true; \
+  /opt/bin/fleetctl start typo3-review-redis-exporter@%i.service;'
+
+[X-Fleet]
+MachineMetadata=role=ttt
+
+### # To fix host(!) settings on a running system:
+#
+# local/$: ssh momcorpttt1
+# momcorpfdc/$: sudo su
+# momcorpfdc/$: sysctl vm.overcommit_memory=1
+# momcorpfdc/$: sysctl net.core.somaxconn=1024

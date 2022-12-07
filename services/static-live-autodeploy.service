@@ -1,0 +1,38 @@
+[Unit]
+Description=Autodeploy of static live artifacts
+
+[Service]
+Type=oneshot
+
+EnvironmentFile=/etc/environment
+Environment="ETCD_TLSKEY=/etc/ssl/etcd/calculonc-key.pem"
+Environment="ETCD_TLSPEM=/etc/ssl/etcd/calculonc.pem"
+Environment="ETCD_CACERT=/etc/ssl/etcd/ca.pem"
+
+ExecStart=/bin/bash -c '\
+  BASE=/var/nextcloud/data/data/__groupfolders; \
+  ARTIFACT=/srv/artifacts/static/live; \
+  DATE=`date +%%Y%%m%%d-%%H%%M`; \
+  while [ $$(find $$ARTIFACT -path \'*.sources.tar.gz\' | wc -l) -eq 0 ] ; do sleep 2; done; \
+  echo "Wait for static project sources"; \
+  while read -r fullfile ; do \
+    echo "Waiting for file: $$fullfile"; \
+    until ! err=$$(lsof $$fullfile 2>&1 > /dev/null); do sleep 1; done; \
+    if [ -z "$$err" ]; then \
+      echo "File completely loaded"; \
+    fi; \
+  done < <(find $$ARTIFACT -path \'*.sources.tar.gz\'); \
+  sleep 5s; \
+  GROUPFOLDERID="$$(cat /srv/artifacts/static/live/nextcloud-groupfolderid)"; \
+  TARGETFOLDER=$$BASE/$$GROUPFOLDERID/Releases/$$DATE-static; \
+  rm /srv/artifacts/static/live/nextcloud-groupfolderid; \
+  mkdir -p $$TARGETFOLDER; \
+  mv $$ARTIFACT/* $$TARGETFOLDER/; \
+  chown 33:33 -R /var/nextcloud/data/data/__groupfolders/$$GROUPFOLDERID; \
+  docker exec --user www-data nextcloud php occ groupfolders:scan $$GROUPFOLDERID;'
+
+[Install]
+WantedBy=multi-user.target
+
+[X-Fleet]
+MachineMetadata=role=bil

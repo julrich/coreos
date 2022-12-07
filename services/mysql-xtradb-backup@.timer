@@ -1,0 +1,9 @@
+[Unit]
+Description=Activate XtraDB MySQL Cluster Backup for instance
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=3600
+
+[X-Fleet]
+MachineOf=mysql-xtradb-backup@%i.service

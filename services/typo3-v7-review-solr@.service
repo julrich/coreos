@@ -1,0 +1,35 @@
+[Unit]
+Description=SOLR container for TYPO3 (v7) master webpages
+Documentation=https://github.com/TYPO3-Solr/ext-solr
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+EnvironmentFile=/etc/environment
+Environment="ETCD_TLSKEY=/etc/ssl/etcd/calculonc-key.pem"
+Environment="ETCD_TLSPEM=/etc/ssl/etcd/calculonc.pem"
+Environment="ETCD_CACERT=/etc/ssl/etcd/ca.pem"
+
+ExecStartPre=-/usr/bin/docker kill 'typo3-v7-review-solr-%i'
+ExecStartPre=-/usr/bin/docker network disconnect bridge 'typo3-v7-review-solr-%i' --force
+ExecStartPre=-/usr/bin/docker rm 'typo3-v7-review-solr-%i' -v
+ExecStartPre=/usr/bin/docker pull typo3solr/ext-solr:7.5.2
+
+ExecStart=/usr/bin/docker run \
+  --name "typo3-v7-review-solr-%i" --rm \
+  --env "SERVICE_8983_NAME=typo3-v7-review-solr" \
+  --env "SERVICE_ID=%i" \
+  --env "VIRTUAL_HOST=%i.solr.ruhmesmeile.review" \
+  --env "VIRTUAL_PORT=8983" \
+  --env "LETSENCRYPT_HOST=%i.solr.ruhmesmeile.review" \
+  --env "LETSENCRYPT_EMAIL=infrastructure@ruhmesmeile.com" \
+  --label "container_group=typo3" \
+  typo3solr/ext-solr:7.5.2
+
+[X-Fleet]
+MachineMetadata=role=slr

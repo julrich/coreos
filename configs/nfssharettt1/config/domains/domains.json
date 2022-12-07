@@ -1,0 +1,54 @@
+{
+  "ruhmesmeile.tech": [
+    "typo3.ruhmesmeile.tech",
+    "static.ruhmesmeile.tech",
+    "api.ruhmesmeile.tech",
+    "solr.ruhmesmeile.tech",
+    "mail.ruhmesmeile.tech",
+    "mail-static.ruhmesmeile.tech",
+    "mailstatic.ruhmesmeile.tech"
+  ],
+  "ruhmesmeile.review": [
+    "typo3.ruhmesmeile.review",
+    "static.ruhmesmeile.review",
+    "api.ruhmesmeile.review",
+    "solr.ruhmesmeile.review",
+    "mail.ruhmesmeile.review",
+    "mail-static.ruhmesmeile.review",
+    "mailstatic.ruhmesmeile.review"
+  ],
+  "ruhmesmeile.vision": [
+    "typo3.ruhmesmeile.vision",
+    "static.ruhmesmeile.vision",
+    "api.ruhmesmeile.vision",
+    "solr.ruhmesmeile.vision",
+    "mail.ruhmesmeile.vision",
+    "mail-static.ruhmesmeile.vision",
+    "mailstatic.ruhmesmeile.vision"
+  ],
+  "ruhmesmeile.dev": [
+    "typo3.ruhmesmeile.dev",
+    "static.ruhmesmeile.dev",
+    "api.ruhmesmeile.dev",
+    "solr.ruhmesmeile.dev",
+    "mail.ruhmesmeile.dev",
+    "mail-static.ruhmesmeile.dev",
+    "mailstatic.ruhmesmeile.dev"
+  ],
+  "ruhmesmeile.rocks": [
+    "typo3.ruhmesmeile.rocks",
+    "static.ruhmesmeile.rocks",
+    "production.ruhmesmeile.rocks",
+    "review.ruhmesmeile.rocks",
+    "solutions.ruhmesmeile.rocks",
+    "vision.ruhmesmeile.rocks"
+  ],
+  "ruhmesmeile.solutions": [
+    "production.ruhmesmeile.solutions",
+    "solr.ruhmesmeile.solutions"
+  ],
+  "ruhmesmeile.tools": [
+    "taktsoft.ruhmesmeile.tools",
+    "radikant.ruhmesmeile.tools"
+  ]
+}

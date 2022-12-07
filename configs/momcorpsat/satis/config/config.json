@@ -1,0 +1,834 @@
+{
+    "name": "ruhmesmeile\/satis",
+    "description": "",
+    "homepage": "https:\/\/satis.ruhmesmeile.tools",
+    "output-dir": "web",
+    "output-html": true,
+    "require-all": true,
+    "require-dependencies": false,
+    "require-dev-dependencies": false,
+    "require-dependency-filter": true,
+    "repositories": [
+        {
+            "id": "4fe709dba56174613c243e23e183915e",
+            "type": "git",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/rm-base.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "0458172b3c6a461fab54db48095ce141",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/rm-custom-elements.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "be738c657ecf4bc2f6f203721cb1f937",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/rm-base-multilang.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "f7db5a010d8997f47602f4b42d4b0e4c",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/rm-news.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "16305a01c79f54ce4c9a7ea9a24b8de1",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/kal\/rm-powermail-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "f97334b24079c5f41a42df2bbdfdc837",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/rm-realurl.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "9977a9795cf76bfe0293d7cbffb85185",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/rm-seeder.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "5b19b05710ea4f132a30e84ffcd7415b",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/rm-tools.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "f0b940c050230b52420472538a408f63",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/rm-custom-elements-demo.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "f54dcfdde0d8feb8be33e6eb2b010499",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/s25\/rm-dist.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "471b745071782e96cf40c7fc48e22a14",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/s25\/rm-base-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "c36c6214a6cfa8016bc79503cd11b36c",
+            "type": "git",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/kal\/rm-base-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "f64bb5c15c9f5d050a877fe973fc9cac",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/kal\/rm-dist.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "4482124c8d18023dd1c1daf75900ef8d",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/kal\/rm-sitemap-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "336b58d975d431792af74f787035b93a",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/con\/typo3-realurl.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "3b474011a4c2ee375ed60c0aa7bf6215",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/rm-mail-download.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "ed4d5bebecf1c356406059311a9ea5ab",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/spne\/rm-dist.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "27ad5ab6c7f66bad232bf84a3a936fe2",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/spne\/rm-base-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "2368188afa4e0cc05c4be1029e3c5efc",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/spne\/rm-custom-elements-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "8dfed9aca3c95e25f1c948e1b5007e81",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/rm-form.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "3f57e9774915229bef37cfb163cbb11b",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/rm-solr.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "84e9db9e2e6dc6e00d6c0f35e4840d62",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/solrfluid.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "82487ebe01808e5c8d11ea23cbd78d94",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/solrfal.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "130e173359b66cb31f251e130d56ebe8",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/s25\/rm-custom-elements-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "321187a17ef67938c17acf158a90204e",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/orwe\/rm-custom-elements-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "08b12f20cf603f81e376159c1f79b03e",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/orwe\/rm-base-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "d76a9ae2017e789b576375726191f110",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/orwe\/rm-dist.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "ce47112bec3805ca91ca40af80dbf10d",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/kal\/rm-report.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "f0f459d69ef7e0c7fda25ff9b137c143",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/rm-custom-elements-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "c35f2233118d0448ac0a320b46c0e9cc",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/rm-base-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "658bdf33f117ff16b24fc5cc21c5c243",
+            "type": "git",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/rm-configuration-manager.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "c94111f5dc0c9fbb5516bbd06f70547b",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/rm-event.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "1c7079e79ecd4c1009c5321166d40dd4",
+            "type": "git",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/dd_googlesitemap_dmf.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "dfcf4950b8329dee544608e9cebdf060",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/ztv\/rm-calculator.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "db545e03cc3f68f212c7ce701ba81ee6",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/offli\/rm-base-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "5bde99f6da1986a4d242036ae79e5866",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/rm-glossar.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "2e745efb29597364ccdc14e258da94a4",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/rm-reference.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "788e10dfb1b15137e3576a67471db2b9",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/kal\/rm-custom-elements-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "284e678a2fc3b257fa97537e091ce16d",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/rm-social-wall.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "8cb4aba57455e3f8d92ef7cf63d2def7",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/kkm\/rm-base-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "8a8da67111274a65443e82547b65eae7",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/kkm\/rm-custom-elements-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "37857d252ce192f068e01eab7231cd06",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/bts\/rm-base-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "67251dbabe9329df1b550c82e284ee7e",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/bts\/rm-dist.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "99b94568208f4ec12a78d0c747dce7c0",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/kkm\/rm-dist.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "a1001341f974d306a0c98a83ebe940b2",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/bts\/rm-custom-elements-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "ae11c44d284c56faad9909e66049c87f",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/rm-offer.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "2b0bb066ae82a0df24b1b3bf8e3f6f35",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/kkm\/rm-event-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "878d0f4abf6479bab5adb82682ec5b7a",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/kkm\/rm-extranet-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "dd79e244fbe6d85ab9d2e54c100a5dc1",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/spne\/rm-mail-download.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "75dab12ffb9caa2b5de846c1214687db",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/rm-editor.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "ce4c488060db6ddad406bb2f781d0c4f",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/led\/rm-base-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "ecabbb8329cf50c04390ad2c03f56803",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/led\/rm-custom-elements-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "10479fe7adae2c3d34de6bf8d5571195",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/led\/rm-label-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "b908971fed7fa5f3082965c2541d53aa",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/hpp\/rm-base-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "9accb1c142e6fbe249d7b82f91047c00",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/hpp\/rm-custom-elements-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "fc6954a5cc111116c06c63ab400c98ff",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/led\/rm-solr-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "6a5bee30a8b8f15aaa325c6c62aac350",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/kkm\/rm-form-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "321fc83c9ec838e7bc617125cc6e7793",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/orwe\/rm-form-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "7fc8ce15405eadfb20898d0d0f557e19",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/orwe\/rm-mail-download.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "2deaa16d3649d1f7fc015335b65bc302",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/orwe\/rm-mail-download-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "8f515693c9bb5596aa255d23aebb607f",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/supra\/rm-base-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "00fec6ec076e26bac337b375c6f0c141",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/supra\/rm-custom-elements-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "68c8b86a8ea387eba3a473f2962466b3",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/orwe\/rm-event-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "a59a432aca0278289ba4d35a7abc32c2",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/wol\/rm-custom-elements-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "2261bd045f403abc8d61cb9bd5f6d1f2",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/wol\/rm-base-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "275b5c4b7a6d1bb72f5cea4ecaa6c0bf",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/orwe\/rm-offer-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "1d61205551feeefa7fc8bf1fdb619671",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/hpp\/rm-dist.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "e0034a3321f27c0a3adaab68e62c97ca",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/led\/rm-dist.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "0400bf8a71ccc3935a1dc40415d715ce",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/offli\/rm-dist.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "7b8fd2568d0a883a197a0871fe174312",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/supra\/rm-dist.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "14450d84d0e1dc876ad8ea9e9ec5c0a4",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/rm-product.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "9b4f289a3f424ea21ab2e4dadb44269b",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/wol\/rm-product-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "0d57c30813028235dacb417984c92a64",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/hkl\/rm-dist.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "a4f9c76982f9b5173418eb3fa4d3004f",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/hkl\/rm-base-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "253855af61109336cfa46568fced9d2f",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/hkl\/rm-custom-elements-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "535f6519deca86241ee10786c650be3b",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/rm-extranet.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "c1981bdead3140ed43611e1329cd1150",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/hpp\/rm-project-gallery-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "daf0988744cb638732f28d59af9b2d6d",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/del\/rm-custom-elements-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "56659c7fcc9ac722e865eb35865fc5b9",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/del\/rm-base-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "7ad35712fdfc9460e7db3fa71324af3f",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/rm-location-finder.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "2055448935f31a0a447537ad557d8bc8",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/hpp\/rm-team-gallery-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "1e70da322bc71bf9dfc290433bcf6fb9",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/tier\/typo3-realurl.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "ca1a212dba6f731e61f622574cb2714a",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/qtrad\/rm-base-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "f5f53295397c58877df5fd2ae88e65f1",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/qtrad\/rm-custom-elements-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "4a2363df7a03b2c52a011e7104cdd6a8",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/qtrad\/rm-dist.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "c1f9220a26100b0aabea601e5c6223c5",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/del\/rm-dist.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "4d9fbaf9e27adff3c90ff86a5d037bbf",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/bts\/rm-job-market-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "7a4acd39f3f47dc31bd3ad2dbbac247d",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/rm-form-builder.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "6061342d433fd87880903834e8db462e",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/qtrad\/rm-msreport-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "98211c8fc49720ccc821e544fdad31a0",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/qtrad\/rm-servicepartner-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "f0d0c1db4e9634cd6f0e1c7912901f0d",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/qtrad\/rm-calculator.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "040614661b6c0d7108fc561a1a9b959d",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/tec\/rm-custom-elements-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "28b8dfd25a9d065720ec376d7e21dd44",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/tec\/rm-base-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "ab6f617b67332f992907f372c3cbf677",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/tec\/rm-dist.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "0b42352ee11e38907bc90d3ef9bdc1f7",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/wol\/rm-server-sync-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "b975a4ef1ecf3d0ffd8fb5ef058346d5",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/five\/rm-base-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "363bfd49c46c4a751a3e4925e44a9c3c",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/five\/rm-custom-elements-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "d3af43a175bcfda558e359c35e8f0917",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/five\/rm-dist.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "4d158c945fc827fa7a78d39b031bd5a7",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/rm19\/rm-dist.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "3f6898296399f25bd3e0f96c5e65061c",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/rm19\/rm-base-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "b8568e83112e5dad795046934aed456e",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/rm19\/rm-custom-elements-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "8e8c607acee7b13b1007832279993405",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/wol\/rm-dist.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "cf26940bc7075eb8e1930d302b672301",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/rr19\/rm-dist.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "758eb2c2eb63e0292ef8593b75bf0477",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/rr19\/rm-base-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "a638f956ec18444189e062d08a659440",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/rr19\/rm-custom-elements-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "3c205db01f163e38ffde493fcdd672c3",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/goll19\/rm-dist.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "6f0fad9bf59dc7d4340b88fb370b41fb",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/goll19\/rm-base-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "ba60f6027bad35967595cd54ce2e06c6",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/goll19\/rm-custom-elements-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "345672b1eaddafba6d25b4916469c73c",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/amk\/rm-dist.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "89ea6ab07e419890abe3752a257e27dd",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/amk\/rm-base-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "1f40fed3360f4f6e6aab609c21276c82",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/amk\/rm-custom-elements-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "91a0e5e43a38e68ad2b1c5399a5e817e",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/tec\/rm-newsletter-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "a6361ea1bfb9a33a42bf01f6c1142ba2",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/rm-real-estate.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "e0a90453860fd8ecabe328ebc447ef25",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/sbm\/rm-dist.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "21165332491e6add3b62ea5927fb38c3",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/sbm\/rm-base-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "7541f05a175832fead881c0b676e0604",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/sbm\/rm-custom-elements-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "d1e70bcf037c08b52f8970d546601347",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/gse\/rm-dist.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "f5b8f4bd2ec7c1bb4cae74c8a05cc27f",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/gse\/rm-base-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "dbb9e6e3e1b8bdea4724e5f2060e9809",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/gse\/rm-custom-elements-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "0ba4d446136896475bddf2e596f6f261",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/amk\/rm-real-estate-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "3920a81c5cd83632cf14ef9b91c45602",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/now\/rm-dist.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "4cd4f6795df6cf9fcd79acf0904ea224",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/now\/rm-base-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "e71d62a642670399cc557fdd902167f4",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/now\/rm-custom-elements-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "f1d71069240ad67dac241aae694c8ac2",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/gg\/rm-dist.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "68e92fd66724bbe7fec0519fcb337566",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/gg\/rm-base-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "3becb2a2b6e91660168cd5e8f562b4ae",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/gg\/rm-custom-elements-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "aa015696be1b3f7daa4981f25d049673",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/t3\/rm-quote.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "6224b17bb73e12cc44dcfa5a74d93cc1",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/fll\/rm-custom-elements-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "43b26de58e0995d89d67a20dceb27c16",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/fll\/rm-base-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "5d2a594addf86b4f64f76e6901c1c975",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/km\/rm-custom-elements-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "dbd1f4130825a9c269254f2c9f937098",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/km\/rm-base-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "e404586ed5e59444ad26e7d1dc2197fa",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/km\/rm-dist.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "15a2291e4403221f8df94b6ece2e1bfb",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/ifbm\/rm-custom-elements-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "b06402cdd014d1da9193ed822fd74799",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/ifbm\/rm-base-instance.git",
+            "installation-source": "dist"
+        },
+        {
+            "id": "18cf1cbb64ab628ee037b6bbf69e6b2e",
+            "type": "vcs",
+            "url": "ssh:\/\/git@bitbucket.ruhmesmeile.tools:7999\/ifbm\/rm-dist.git",
+            "installation-source": "dist"
+        }
+    ],
+    "archive": {
+        "directory": "dist",
+        "format": "zip",
+        "skip-dev": true,
+        "whitelist": [],
+        "blacklist": [],
+        "checksum": true
+    },
+    "minimum-stability": "dev",
+    "providers": false,
+    "pretty-print": true
+}

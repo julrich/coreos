@@ -1,0 +1,44 @@
+[Unit]
+Description=Collects resource usage and performance characteristics of running containers and machines.
+Documentation=https://github.com/prometheus/prometheus
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+ExecStartPre=-/usr/bin/docker kill prometheus
+ExecStartPre=-/usr/bin/docker rm prometheus
+ExecStartPre=/usr/bin/docker pull prom/prometheus:v2.17.1
+
+ExecStart=/usr/bin/docker run \
+  --name "prometheus" \
+  --env "SERVICE_NAME=prometheus" \
+  --env "SERVICE_ID=%H" \
+  --env "VIRTUAL_HOST=prometheus.ruhmesmeile.tools" \
+  --env "VIRTUAL_PORT=9090" \
+  --env "LETSENCRYPT_HOST=prometheus.ruhmesmeile.tools" \
+  --env "LETSENCRYPT_EMAIL=jonas.ulrich@ruhmesmeile.com" \
+  --label "container_group=monitoring" \
+  --user "root" \
+  --volume "/etc/ssl/etcd/ca.pem:/etc/ssl/etcd/ca.pem" \
+  --volume "/etc/ssl/etcd/calculonc.pem:/etc/ssl/etcd/calculonc.pem" \
+  --volume "/etc/ssl/etcd/calculonc-key.pem:/etc/ssl/etcd/calculonc-key.pem" \
+  --volume "/var/prometheus/config:/etc/prometheus/config" \
+  --volume "/var/prometheus/data:/prometheus/data" \
+  --volume "/var/prometheus/rules:/etc/prometheus/rules" \
+  prom/prometheus:v2.17.1 \
+  --config.file=/etc/prometheus/config/prometheus.yml \
+  --storage.tsdb.path=/prometheus/data \
+  --storage.tsdb.retention=8d \
+  --web.console.libraries=/usr/share/prometheus/console_libraries \
+  --web.console.templates=/usr/share/prometheus/consoles \
+  --web.external-url=https://prometheus.ruhmesmeile.tools/
+
+ExecStop=-/usr/bin/docker stop prometheus
+
+[X-Fleet]
+MachineMetadata=role=dama

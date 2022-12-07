@@ -1,0 +1,9 @@
+[Unit]
+Description=Activate re-issuance of LetsEncrypt wildcard certificates daily
+
+[Timer]
+OnCalendar=weekly
+Persistent=true
+
+[X-Fleet]
+MachineMetadata=role=fdc

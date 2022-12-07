@@ -1,0 +1,63 @@
+[Unit]
+Description=Upgrade TYPO3, triggering all relevant upgrade wizards
+Documentation=https://bitbucket.ruhmesmeile.tools/projects/T3/repos/rm-dist/browse
+
+[Service]
+Type=oneshot
+
+TimeoutSec=2700s
+
+EnvironmentFile=/etc/environment
+Environment="ETCD_TLSKEY=/etc/ssl/etcd/calculonc-key.pem"
+Environment="ETCD_TLSPEM=/etc/ssl/etcd/calculonc.pem"
+Environment="ETCD_CACERT=/etc/ssl/etcd/ca.pem"
+
+ExecStartPre=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/tech/%i/status/typo3/current "upgrading - starting" > /dev/null'
+ExecStartPre=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/tech/%i/status/typo3/upgrading "$$(date +%%s)" > /dev/null'
+
+ExecStartPre=/bin/bash -c '\
+  until [ "$$(docker inspect -f {{.State.Running}} typo3-tech-%i)" == "true" ]; do sleep 1; done; \
+  docker exec -t typo3-tech-%i bash -c \'\
+    echo "[SYSTEMD] Upgrade: Stopping services"; \
+    service cron stop; \
+    service nginx stop; \''
+
+ExecStartPre=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/tech/%i/status/typo3/current "upgrading - stopped" > /dev/null'
+ExecStartPre=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/tech/%i/status/typo3/upgrading "$$(date +%%s)" > /dev/null'
+
+ExecStart=/bin/bash -c -x '\
+  cp /srv/storage/typo3/tech/%i/database/*.sql /srv/source/typo3/tech/%i/web/; \
+  until [ "$$(docker inspect -f {{.State.Running}} typo3-tech-%i)" == "true" ]; do sleep 1; done; \
+  docker exec -t typo3-tech-%i bash -c -x \'\
+    echo "[SYSTEMD] Upgrade: Importing Database"; \
+    MSQL=mysql.services.ruhmesmeile.local; \
+    cat web/*.sql | mysql --max_allowed_packet=512M -h $$MSQL -u rm-proxy -poxidNyzuuU37cE || true; \
+    echo "[SYSTEMD] Upgrade: Upgrading TYPO3"; \
+    vendor/bin/typo3cms database:updateschema || true; \
+    if [ -f "/app/util/upgrade.sh" ]; \
+    then \
+      chmod u+x util/upgrade.sh; \
+      /app/util/upgrade.sh; \
+    else \
+      vendor/bin/typo3cms upgrade:all; \
+    fi; \''
+
+ExecStartPost=/bin/bash -c '\
+  until [ "$$(docker inspect -f {{.State.Running}} typo3-tech-%i)" == "true" ]; do sleep 1; done; \
+  docker exec -t typo3-tech-%i bash -c \'\
+    echo "[SYSTEMD] Upgrade: Starting Services"; \
+    chown -hR application:application /app; \
+    chmod -R a+s /app; \
+    rm -rf web/typo3temp/*; \
+    service cron start; \
+    service nginx start;\''
+
+ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/tech/%i/status/typo3/current "upgrading - upgraded" > /dev/null'
+ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/tech/%i/status/typo3/upgrading "$$(date +%%s)" > /dev/null'
+
+ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/tech/%i/status/typo3/current "upgraded" > /dev/null'
+ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/tech/%i/status/typo3/upgraded "$$(date +%%s)" > /dev/null'
+
+[X-Fleet]
+MachineOf=typo3-tech@%i.service
+

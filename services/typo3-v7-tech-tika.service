@@ -1,0 +1,25 @@
+[Unit]
+Description=TIKA container for TYPO3 (v7) develop webpages
+Documentation=https://github.com/LogicalSpark/docker-tikaserver
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+ExecStartPre=-/usr/bin/docker kill 'tika-tech'
+ExecStartPre=-/usr/bin/docker rm 'tika-tech' -v
+ExecStartPre=/usr/bin/docker pull logicalspark/docker-tikaserver:latest
+
+ExecStart=/usr/bin/docker run \
+  --name "tika-tech" --rm \
+  --env "SERVICE_9998_NAME=typo3-v7-tech-tika" \
+  --env "SERVICE_ID=%i" \
+  --label "container_group=typo3" \
+  logicalspark/docker-tikaserver:latest
+
+[X-Fleet]
+MachineMetadata=role=fdc

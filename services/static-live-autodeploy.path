@@ -1,0 +1,11 @@
+[Unit]
+Description=Path watcher for autodeploy of static artifacts for live environment
+
+[Path]
+DirectoryNotEmpty=/srv/artifacts/static/live
+
+[Install]
+WantedBy=multi-user.target
+
+[X-Fleet]
+MachineMetadata=role=bil

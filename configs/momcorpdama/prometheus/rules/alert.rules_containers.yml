@@ -1,0 +1,116 @@
+groups:
+- name: alert.rules_containers
+  rules:
+  - alert: high_cpu_usage_on_container
+    expr: sum(rate(container_cpu_usage_seconds_total{name!="prometheus",name!="logstash",name!="elasticsearch",name=~".+"}[5m]))
+      BY (name, instance) * 100 > 50
+    for: 5m
+    annotations:
+      identifier: '{{ $labels.instance }}'
+      description: '{{ $labels.name }} is using a LOT of CPU. CPU usage is {{ humanize
+        $value}}%.'
+      summary: 'HIGH CPU USAGE WARNING: CONTAINER ''{{ $labels.name }}'' on ''{{ $labels.instance
+        }}'''
+  - alert: high_cpu_usage_on_logstash
+    expr: sum(rate(container_cpu_usage_seconds_total{name=~"logstash"}[5m])) BY
+      (name, instance) * 100 > 99
+    for: 5m
+    annotations:
+      identifier: '{{ $labels.instance }}'
+      description: '{{ $labels.name }} is using a LOT of CPU. CPU usage is {{ humanize
+        $value}}%.'
+      summary: 'HIGH CPU USAGE WARNING: CONTAINER ''{{ $labels.name }}'' on ''{{ $labels.instance
+        }}'''
+  - alert: high_cpu_usage_on_elasticsearch
+    expr: sum(rate(container_cpu_usage_seconds_total{name=~"elasticsearch"}[5m])) BY
+      (name, instance) * 100 > 99
+    for: 5m
+    annotations:
+      identifier: '{{ $labels.instance }}'
+      description: '{{ $labels.name }} is using a LOT of CPU. CPU usage is {{ humanize
+        $value}}%.'
+      summary: 'HIGH CPU USAGE WARNING: CONTAINER ''{{ $labels.name }}'' on ''{{ $labels.instance
+        }}'''
+  - alert: high_cpu_usage_on_prometheus
+    expr: sum(rate(container_cpu_usage_seconds_total{name=~"prometheus"}[5m])) BY
+      (name, instance) * 100 > 99
+    for: 5m
+    annotations:
+      identifier: '{{ $labels.instance }}'
+      description: '{{ $labels.name }} is using a LOT of CPU. CPU usage is {{ humanize
+        $value}}%.'
+      summary: 'HIGH CPU USAGE WARNING: CONTAINER ''{{ $labels.name }}'' on ''{{ $labels.instance
+        }}'''
+  - alert: container_eating_memory
+    expr: sum(container_memory_rss{name!="bamboo",name!="bamboo-agent",name!="bitbucket",name!="confluence",name!="graphite",name!="tika",name!="elasticsearch",name!="jira",name!="logstash",name!="prometheus",name!="xtradb-node",name=~".+"})
+      BY (instance, name) > 7e+08
+    for: 5m
+    annotations:
+      identifier: '{{ $labels.instance }}'
+      description: '{{ $labels.name }} is eating up a LOT of memory. Memory consumption
+        of {{ $labels.name }} is at {{ humanize $value}}.'
+      summary: 'HIGH MEMORY USAGE WARNING: CONTAINER ''{{ $labels.name }}'' on ''{{
+        $labels.instance }}'''
+  - alert: elasticsearch_eating_memory
+    expr: sum(container_memory_rss{name=~"elasticsearch"}) BY (instance, name) > 3e+09
+    for: 5m
+    annotations:
+      identifier: '{{ $labels.instance }}'
+      description: '{{ $labels.name }} is eating up a LOT of memory. Memory consumption
+        of {{ $labels.name }} is at {{ humanize $value}}.'
+      summary: 'HIGH MEMORY USAGE WARNING: CONTAINER ''{{ $labels.name }}'' on ''{{
+        $labels.instance }}'''
+  - alert: logstash_eating_memory
+    expr: sum(container_memory_rss{name=~"logstash"}) BY (instance, name) > 1.4e+09
+    for: 5m
+    annotations:
+      identifier: '{{ $labels.instance }}'
+      description: '{{ $labels.name }} is eating up a LOT of memory. Memory consumption
+        of {{ $labels.name }} is at {{ humanize $value}}.'
+      summary: 'HIGH MEMORY USAGE WARNING: CONTAINER ''{{ $labels.name }}'' on ''{{
+        $labels.instance }}'''
+  - alert: nodeapp_eating_memory
+    expr: sum(container_memory_rss{name=~"node"}) BY (instance, name) > 2.5e+09
+    for: 5m
+    annotations:
+      identifier: '{{ $labels.instance }}'
+      description: '{{ $labels.name }} is eating up a LOT of memory. Memory consumption
+        of {{ $labels.name }} is at {{ humanize $value}}.'
+      summary: 'HIGH MEMORY USAGE WARNING: CONTAINER ''{{ $labels.name }}'' on ''{{
+        $labels.instance }}'''
+  - alert: tika_eating_memory
+    expr: sum(container_memory_rss{name=~"tika"}) BY (instance, name) > 2.6e+09
+    for: 5m
+    annotations:
+      identifier: '{{ $labels.instance }}'
+      description: '{{ $labels.name }} is eating up a LOT of memory. Memory consumption
+        of {{ $labels.name }} is at {{ humanize $value}}.'
+      summary: 'HIGH MEMORY USAGE WARNING: CONTAINER ''{{ $labels.name }}'' on ''{{
+        $labels.instance }}'''
+  - alert: graphite_eating_memory
+    expr: sum(container_memory_rss{name=~"graphite"}) BY (instance, name) > 1.1e+09
+    for: 5m
+    annotations:
+      identifier: '{{ $labels.instance }}'
+      description: '{{ $labels.name }} is eating up a LOT of memory. Memory consumption
+        of {{ $labels.name }} is at {{ humanize $value}}.'
+      summary: 'HIGH MEMORY USAGE WARNING: CONTAINER ''{{ $labels.name }}'' on ''{{
+        $labels.instance }}'''
+  - alert: prometheus_eating_memory
+    expr: sum(container_memory_rss{name=~"prometheus"}) BY (instance, name) > 4.5e+09
+    for: 5m
+    annotations:
+      identifier: '{{ $labels.instance }}'
+      description: '{{ $labels.name }} is eating up a LOT of memory. Memory consumption
+        of {{ $labels.name }} is at {{ humanize $value}}.'
+      summary: 'HIGH MEMORY USAGE WARNING: CONTAINER ''{{ $labels.name }}'' on ''{{
+        $labels.instance }}'''
+  - alert: xtradb_node_eating_memory
+    expr: sum(container_memory_rss{name=~"xtradb-node"}) BY (instance, name) > 4.6e+09
+    for: 5m
+    annotations:
+      identifier: '{{ $labels.instance }}'
+      description: '{{ $labels.name }} is eating up a LOT of memory. Memory consumption
+        of {{ $labels.name }} is at {{ humanize $value}}.'
+      summary: 'HIGH MEMORY USAGE WARNING: CONTAINER ''{{ $labels.name }}'' on ''{{
+        $labels.instance }}'''

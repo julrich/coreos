@@ -1,0 +1,6 @@
+/.idea
+
+/binaries/proxysql-exporter/proxysql_exporter-src
+/binaries/mysqld-exporter/mysqld_exporter-src
+
+.DS_Store

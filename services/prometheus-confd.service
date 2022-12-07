@@ -1,0 +1,16 @@
+[Unit]
+Description=Dynamically creates Dashboards from etcd2 and confd templates
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/environment
+
+ExecStart=/home/julrich/confd -log-level=info -onetime -backend etcd -node https://127.0.0.1:2379 -confdir="/var/prometheus/confd" -client-ca-keys="/etc/ssl/etcd/ca.pem" -client-cert="/etc/ssl/etcd/calculonc.pem" -client-key="/etc/ssl/etcd/calculonc-key.pem"
+
+[X-Fleet]
+MachineMetadata=role=dama
+
+# Requires confd-binary in /home/julrich
+#
+# TODO:
+# * do not use /home/julrich anymore

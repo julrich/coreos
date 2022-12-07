@@ -1,0 +1,28 @@
+[Unit]
+Description=Starts acme letsencrypt wildcard certification renewal for all domains
+
+[Service]
+Type=oneshot
+
+TimeoutSec=28800s
+
+ExecStart=/bin/bash -cx '\
+  rm -rf /tmp/lock-acme.ruhmesmeile.*; \
+  (systemctl start acme-letsencrypt@ruhmesmeile.dev.service || true) && sleep 10m; \
+  rm -rf /tmp/lock-acme.ruhmesmeile.*; \
+  (systemctl start acme-letsencrypt@ruhmesmeile.vision.service || true) && sleep 10m; \
+  rm -rf /tmp/lock-acme.ruhmesmeile.*; \
+  (systemctl start acme-letsencrypt@ruhmesmeile.tech.service || true) && sleep 10m; \
+  rm -rf /tmp/lock-acme.ruhmesmeile.*; \
+  (systemctl start acme-letsencrypt@ruhmesmeile.review.service || true) && sleep 10m; \
+  rm -rf /tmp/lock-acme.ruhmesmeile.*; \
+  (systemctl start acme-letsencrypt@ruhmesmeile.solutions.service || true) && sleep 10m; \
+  rm -rf /tmp/lock-acme.ruhmesmeile.*; \
+  (systemctl start acme-letsencrypt@ruhmesmeile.rocks.service || true) && sleep 10m; \
+  rm -rf /tmp/lock-acme.ruhmesmeile.*; \
+  (systemctl start acme-letsencrypt@ruhmesmeile.tools.service || true) && sleep 10m; \
+  rm -rf /tmp/lock-acme.ruhmesmeile.*; \
+  docker kill -s HUP nginx;'
+
+[X-Fleet]
+MachineMetadata=role=fdc

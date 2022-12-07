@@ -1,0 +1,96 @@
+[mysqld]
+
+#################################################
+## Initial XtraDB configuration
+
+datadir=/var/lib/mysql
+
+default_storage_engine=InnoDB
+binlog_format=ROW
+
+innodb_flush_log_at_trx_commit  = 0
+innodb_flush_method             = O_DIRECT
+innodb_file_per_table           = 1
+innodb_autoinc_lock_mode=2
+
+bind_address = 0.0.0.0
+
+wsrep_slave_threads=2
+wsrep_cluster_address=gcomm://
+wsrep_provider=/usr/lib64/galera3/libgalera_smm.so
+
+wsrep_cluster_name=Theistareykjarbunga
+
+wsrep_sst_method=xtrabackup-v2
+wsrep_sst_auth="root:"
+
+
+
+#################################################
+## Charset
+
+character-set-server=utf8
+collation-server=utf8_general_ci
+
+#################################################
+## Buffers
+
+key_buffer_size                 = 200M
+query_cache_size                = 100M
+
+innodb_buffer_pool_size         = 6G
+innodb_log_file_size            = 512M
+innodb_log_buffer_size          = 10M
+
+tmp_table_size      = 200M
+max_heap_table_size = 200M
+
+open-files-limit  = 2048
+thread_cache_size = 12
+
+# Fast SQL import
+local-infile=1
+
+#################################################
+## Misc
+
+## direct access to files, avoid OS-caching (not posssible in docker)
+; innodb_flush_method=O_DIRECT
+
+transaction-isolation=REPEATABLE-READ
+;transaction-isolation=READ-COMMITTED
+
+#################################################
+## Query cache
+
+query_cache_limit = 256k
+query_cache_size  = 60M
+query_cache_type  = 1
+
+#################################################
+## Query log
+
+slow-query-log
+slow_query_log_file = /dev/stderr
+long_query_time     = 1
+; log-queries-not-using-indexes
+
+#################################################
+## Connections
+##
+## keep connections low because each conncetion
+## will have their own buffers
+## - prevent swapping here -
+
+max_connections    = 1024
+max_allowed_packet = 256M
+
+
+#################################################
+## TYPO3
+##
+
+sql-mode=""
+
+[sst]
+inno-backup-opts='--lock-ddl'

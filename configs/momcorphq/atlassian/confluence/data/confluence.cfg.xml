@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<confluence-configuration>
+  <setupStep>complete</setupStep>
+  <setupType>custom</setupType>
+  <buildNumber>6441</buildNumber>
+  <properties>
+    <property name="admin.ui.allow.daily.backup.custom.location">false</property>
+    <property name="admin.ui.allow.manual.backup.download">false</property>
+    <property name="admin.ui.allow.site.support.email">false</property>
+    <property name="atlassian.license.message">AAABSg0ODAoPeNptkF9LwzAUxd/zKQK+6ENHl7VzGwR0bZmDrpN1DgRfsnjngkk6krS4b2/6RxDxI S+595zfOfdmXwMuqgaTCIfxYjJbTKY4KfeYhOMYFbU6gtmeXiwYS0mMUrDciIsTlaZJpU+yBs0B3 5ZgGjB3mMS4231b4KRSCgwXTOJccNAWUGKAtdKUOaAtIBiPAxIh7+QYdwVTQAshLd4w+1lZxD1h5 AeiAepMDf1H6ZhxYOiJydaz12YbJiTVXjxSnfjB1GcFVoGQMOKVQlnDZN3hB2VnNkTbXy/Q4ZPtZ pPtkvVjjmQ/Ovg6rYggj9AONPONs6+LMNefHtOhx9Z8MC1sD/nFxyt1fEL9jdYpXc5ncRDtXvMgW h5WwX2a7FCZFdS/YEpCMp+EaMjlt/N1+s/gV4BaS6GEg3f0XBt+Zhb+3vcbfUahMjAtAhQetSCX8 CdK5SRjAWCJLJzpB+07sgIVAI/gKhPYnUAePfw2FdfWxHG3TOl4X02gc</property>
+    <property name="attachments.dir">${confluenceHome}/attachments</property>
+    <property name="confluence.setup.server.id">B985-4RYL-4BVG-7DCR</property>
+    <property name="confluence.webapp.context.path"></property>
+    <property name="hibernate.c3p0.acquire_increment">1</property>
+    <property name="hibernate.c3p0.idle_test_period">100</property>
+    <property name="hibernate.c3p0.max_size">30</property>
+    <property name="hibernate.c3p0.max_statements">0</property>
+    <property name="hibernate.c3p0.min_size">0</property>
+    <property name="hibernate.c3p0.timeout">30</property>
+    <property name="hibernate.connection.driver_class">org.postgresql.Driver</property>
+    <property name="hibernate.connection.isolation">2</property>
+    <property name="hibernate.connection.password">uocorislidra</property>
+    <property name="hibernate.connection.url">jdbc:postgresql://postgres.services.ruhmesmeile.local:5432/confluence</property>
+    <property name="hibernate.connection.username">confuser</property>
+    <property name="hibernate.database.lower_non_ascii_supported">true</property>
+    <property name="hibernate.dialect">net.sf.hibernate.dialect.PostgreSQLDialect</property>
+    <property name="hibernate.setup">true</property>
+    <property name="lucene.index.dir">${localHome}/index</property>
+    <property name="webwork.multipart.saveDir">${localHome}/temp</property>
+  </properties>
+</confluence-configuration>

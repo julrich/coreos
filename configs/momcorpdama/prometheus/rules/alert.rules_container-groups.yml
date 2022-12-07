@@ -1,0 +1,33 @@
+groups:
+- name: alert.rules_container-groups
+  rules:
+  - alert: monitoring_container_group_missing_members
+    expr: count(rate(container_last_seen{container_group=~"monitoring",name=~".+"}[5m]))
+      BY (container_group) < 65
+    for: 5m
+    annotations:
+      identifier: '{{ $labels.container_group }}'
+      description: '{{ $labels.container_group }} is missing containers. Container
+        count is {{ $value }}, and should at least be 65.'
+      summary: 'CONTAINER GROUP WARNING: CONTAINER GROUP ''{{ $labels.container_group
+        }}'''
+  - alert: infrastructure_container_group_missing_members
+    expr: count(rate(container_last_seen{container_group=~"infrastructure",name=~".+"}[5m]))
+      BY (container_group) < 10
+    for: 5m
+    annotations:
+      identifier: '{{ $labels.container_group }}'
+      description: '{{ $labels.container_group }} is missing containers. Container
+        count is {{ $value }}, and should at least be 10.'
+      summary: 'CONTAINER GROUP WARNING: CONTAINER GROUP ''{{ $labels.container_group
+        }}'''
+  - alert: node_container_group_missing_members
+    expr: count(rate(container_last_seen{container_group=~"node",name=~".+"}[5m]))
+      BY (container_group) < 8
+    for: 5m
+    annotations:
+      identifier: '{{ $labels.container_group }}'
+      description: '{{ $labels.container_group }} is missing containers. Container
+        count is {{ $value }}, and should at least be 8.'
+      summary: 'CONTAINER GROUP WARNING: CONTAINER GROUP ''{{ $labels.container_group
+        }}'''

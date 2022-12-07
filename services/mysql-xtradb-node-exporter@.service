@@ -1,0 +1,79 @@
+[Unit]
+Description=Percona MySQL exporter for mysqld stats
+Documentation=https://github.com/percona/mysqld_exporter
+
+[Service]
+Restart=always
+RestartSec=30s
+TimeoutStartSec=360s
+
+User=root
+EnvironmentFile=/etc/environment
+
+ExecStartPre=-/bin/bash -c '/usr/bin/systemctl set-environment DATA_SOURCE_NAME="rmmonitor:3TVHqTJa3iqTiF@tcp(%H.xtradb-node.services.ruhmesmeile.local:3306)/"'
+
+ExecStart=/opt/bin/mysqld_exporter \
+  -collect.auto_increment.columns=true \
+  -collect.binlog_size=true \
+  -collect.engine_innodb_status=true \
+  -collect.global_status=true \
+  -collect.global_variables=true \
+  -collect.info_schema.clientstats=true \
+  -collect.info_schema.innodb_metrics=true \
+  -collect.info_schema.innodb_tablespaces=true \
+  -collect.info_schema.processlist=true \
+  -collect.info_schema.query_response_time=true \
+  -collect.info_schema.tables=true \
+  -collect.info_schema.tables.databases=* \
+  -collect.info_schema.tablestats=true \
+  -collect.info_schema.userstats=true \
+  -collect.perf_schema.eventsstatements=true
+  -collect.perf_schema.eventswaits=true \
+  -collect.perf_schema.file_events=true \
+  -collect.perf_schema.indexiowaits=true \
+  -collect.perf_schema.tableiowaits=true \
+  -collect.perf_schema.tablelocks=true \
+  -collect.slave_status=true \
+
+ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /skydns/local/ruhmesmeile/services/mysqld-exporter/%H "{\\"host\\": \\"$(ip addr show dev docker0 |grep "inet " |sed -re "s/.+ inet ([0-9\\.]+).+/\\1/g")\\",\\"port\\":9104}"'
+
+[X-Fleet]
+MachineMetadata=role=%i
+
+# Following SQL needs to be executed inside the cluster, before connecting the percona/mysqld_exporter to it.
+#
+# Also see: https://www.percona.com/doc/percona-xtradb-cluster/5.7/howtos/proxysql.html#creating-proxy-s-q-l-client-user
+# for a more detailed description of what it entails to add a new user.
+#
+# User should be added on both the proxy-level (connect to mysql-management.services.ruhmesmeile.local on port 6032), see: https://github.com/sysown/proxysql/wiki/Users-configuration
+# and the node-level (connect to xtradb-node.services.ruhmesmeile.local on port 3306), see: https://www.percona.com/doc/percona-xtradb-cluster/5.7/howtos/proxysql.html#creating-proxy-s-q-l-client-user
+# Grants need to happen on the node-level (connect to xtradb-node.services.ruhmesmeile.local on port 3306)
+#
+# MAX_USER_CONNECTIONS needs to be added / enforced on both the node- and the proxy-level. Also see: https://github.com/sysown/proxysql/wiki/Users-configuration#limit-the-number-of-connections-a-user-can-create-to-proxysql
+#
+# More info on the layered configuration system utilized by ProxySQL and our Percona XtraDB / Galera Cluster: https://github.com/sysown/proxysql/wiki/Multi-layer-configuration-system
+#
+# Detailed steps:
+# 
+# local/$: ssh momcorpfdc
+# momcorpfdc/$: sudo su
+# momcorpfdc/$: docker exec -ti xtradb-proxysql bash
+# momcorpfdc:proxysql/$: mysql -h mysql-management.services.ruhmesmeile.local -u admin -padmin -P 6032
+# mysql (proxysql)> use main;
+# mysql (proxysql)> INSERT INTO mysql_users(username,password) VALUES ('rm-exporter','3TVHqTJa3iqTiF');
+# mysql (proxysql)> UPDATE mysql_users SET max_connections=3 WHERE username='rm-exporter';
+# mysql (proxysql)> LOAD MYSQL USERS TO RUNTIME;
+# mysql (proxysql)> SAVE MYSQL USERS TO DISK;
+# mysql (proxysql)> exit;
+# momcorpfdc:proxysql/$: mysql -h momcorpuhat.xtradb-node.services.ruhmesmeile.local -u root -pBXMzpQ2neehQF7 -P 3306
+# mysql (node)> CREATE USER 'rm-exporter'@'%' IDENTIFIED BY '3TVHqTJa3iqTiF';
+# mysql (node)> GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO 'rm-exporter'@'%' WITH MAX_USER_CONNECTIONS 3;
+# mysql (node)> exit;
+# momcorpfdc:proxysql/$: mysql -h momcorpofro.xtradb-node.services.ruhmesmeile.local -u root -pBXMzpQ2neehQF7 -P 3306
+# mysql (node)> CREATE USER 'rm-exporter'@'%' IDENTIFIED BY '3TVHqTJa3iqTiF';
+# mysql (node)> GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO 'rm-exporter'@'%' WITH MAX_USER_CONNECTIONS 3;
+# mysql (node)> exit;
+# momcorpfdc:proxysql/$: mysql -h momcorpas.xtradb-node.services.ruhmesmeile.local -u root -pBXMzpQ2neehQF7 -P 3306
+# mysql (node)> CREATE USER 'rm-exporter'@'%' IDENTIFIED BY '3TVHqTJa3iqTiF';
+# mysql (node)> GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO 'rm-exporter'@'%' WITH MAX_USER_CONNECTIONS 3;
+# mysql (node)> exit;

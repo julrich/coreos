@@ -1,0 +1,42 @@
+[Unit]
+Description=Nginx Generator container (docker-gen)
+Documentation=https://github.com/jwilder/docker-gen
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+ExecStartPre=-/bin/bash -c 'mkdir -p /srv/config/nginx/reload'
+ExecStartPre=-/usr/bin/docker kill nginx-gen
+ExecStartPre=-/usr/bin/docker rm nginx-gen
+ExecStartPre=/usr/bin/docker pull jwilder/docker-gen:latest
+ExecStartPre=/usr/bin/systemctl is-active docker.service
+
+ExecStart=/usr/bin/docker run \
+  --name "nginx-gen" \
+  --label "container_group=nginx-reverse" \
+  --volume "/srv/storage/config/nginx/data/conf.d:/etc/nginx/conf.d" \
+  --volume "/srv/storage/config/nginx/data/certs:/etc/nginx/certs:ro" \
+  --volume "/srv/storage/config/nginx/data/vhost.d:/etc/nginx/vhost.d:ro" \
+  --volume "/srv/storage/config/nginx/data/htpasswd:/etc/nginx/htpasswd:ro" \
+  --volume "/srv/storage/config/nginx/data/templates/nginx.tmpl:/etc/docker-gen/templates/nginx.tmpl:ro" \
+  --volume "/var/run/docker.sock:/tmp/docker.sock:ro" \
+  --volume "/srv/config/nginx/reload:/etc/nginx-reload" \
+  jwilder/docker-gen \
+    -notify "touch /etc/nginx-reload/RELOAD" \
+    -watch \
+    -wait 15s:30s \
+    /etc/docker-gen/templates/nginx.tmpl \
+    /etc/nginx/conf.d/%H.conf
+
+ExecStop=-/usr/bin/docker stop nginx-gen
+
+ExecStopPost=-/bin/bash -c 'rm -rf /srv/storage/config/nginx/data/conf.d/%H.conf'
+
+[X-Fleet]
+Global=true
+MachineMetadata=role=%i
+
+# This nginx-gen container using the docker-gen image will generate a 'momcorpXXX.conf' file from the 'nginx.tmpl' located in /srv/storage/config/nginx/data/conf.d/ on the host.

@@ -1,0 +1,42 @@
+groups:
+- name: alert.rules_nodes
+  rules:
+  - alert: monitoring_service_down
+    expr: up == 0
+    for: 5m
+    annotations:
+      identifier: '{{ $labels.instance }}'
+      description: The monitoring service '{{ $labels.job }}' is down.
+      summary: 'MONITORING SERVICE DOWN WARNING: NODE ''{{ $labels.instance }}'''
+  - alert: high_load_on_node
+    expr: node_load5 > 3
+    for: 6m
+    annotations:
+      identifier: '{{ $labels.instance }}'
+      description: '{{ $labels.instance}} is under high load. Load is {{ humanize
+        $value }}.'
+      summary: 'HIGH LOAD WARINING: NODE ''{{ $labels.instance }}'''
+  - alert: node_running_out_of_memory
+    expr: node_memory_MemAvailable < 1e+09
+    for: 5m
+    annotations:
+      identifier: '{{ $labels.instance }}'
+      description: Less than 1GB of free memory. Free memory at {{ humanize $value
+        }} GB.
+      summary: 'LOW MEMORY WARING: NODE ''{{ $labels.instance }}'''
+  - alert: node_running_out_of_disk_space_root
+    expr: node_filesystem_free{mountpoint="/"} < 1e+10
+    for: 5m
+    annotations:
+      identifier: '{{ $labels.instance }}'
+      description: Less than 10GB of free disk space on root partition. Free disk
+        space at {{ humanize $value }} GB.
+      summary: 'LOW DISK SPACE WARING: NODE ''{{ $labels.instance }}'''
+  - alert: node_running_out_of_disk_space_btrfs
+    expr: node_filesystem_free{mountpoint="/var/lib/docker"} < 5e+09
+    for: 5m
+    annotations:
+      identifier: '{{ $labels.instance }}'
+      description: Less than 5GB of free disk space on BTRFS partition. Free disk
+        space at {{ humanize $value }} GB.
+      summary: 'LOW DISK SPACE WARING: NODE ''{{ $labels.instance }}'''

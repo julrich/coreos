@@ -1,0 +1,11 @@
+[Unit]
+Description=Path watcher for autodeploy of static artifacts for dev branches
+
+[Path]
+DirectoryNotEmpty=/srv/artifacts/static/dev
+
+[Install]
+WantedBy=multi-user.target
+
+[X-Fleet]
+MachineOf=static-dev-autodeploy.service

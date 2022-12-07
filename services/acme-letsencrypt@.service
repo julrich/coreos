@@ -1,0 +1,42 @@
+[Unit]
+Description=(Re-)issues wildcard certificates for given domain using acme.sh, LetsEncrypt and Amazon Route53
+Documentation=https://github.com/Neilpang/acme.sh/tree/master/dnsapi#10-use-amazon-route53-domain-api
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Type=oneshot
+
+TimeoutSec=1200s
+
+SuccessExitStatus=2
+
+ExecStartPre=-/usr/bin/docker kill acme-%i
+ExecStartPre=-/usr/bin/docker rm acme-%i
+ExecStartPre=/usr/bin/docker pull neilpang/acme.sh:latest
+ExecStartPre=/bin/bash -c 'until [ ! -f /tmp/lock-acme.* ]; do ls /tmp/lock*; sleep 10; done;'
+ExecStartPre=/bin/bash -c 'touch /tmp/lock-acme.%i;'
+ExecStartPre=/bin/bash -c '/usr/bin/systemctl set-environment "ACME_DOMAIN_OPTIONS=$$(cat /srv/storage/config/domains/domains.json | jq .[\\\"%i\\\"][] | sed s/\\"//g | while read line; do echo "-d *.$line"; done | paste -sd" " -)"'
+
+ExecStart=/usr/bin/docker run --rm \
+  --name "acme-%i" \
+  --label "container_group=infrastructure" \
+  --volume "/srv/storage/certs:/acme.sh" \
+  neilpang/acme.sh:latest \
+    --issue \
+    --accountemail "infrastructure@ruhmesmeile.com" \
+    --key-file /acme.sh/%i.key \
+    --fullchain-file /acme.sh/%i.crt \
+    --dns dns_aws \
+    --force \
+    -d %i -d *.%i $ACME_DOMAIN_OPTIONS
+
+ExecStartPost=/bin/bash -c 'cp -r /srv/storage/certs/ruhmesmeile.* /srv/storage/config/nginx/data/certs/'
+ExecStartPost=/bin/bash -c 'rm -rf /tmp/lock-acme.%i'
+
+ExecStop=-/usr/bin/docker stop acme-%i
+
+[X-Fleet]
+MachineMetadata=role=fdc

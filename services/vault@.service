@@ -1,0 +1,35 @@
+[Unit]
+Description=Secret storage for ruhmesmeile infrastructure secrets
+Documentation=https://github.com/hashicorp/vault/
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+ExecStartPre=-/usr/bin/docker kill vault
+ExecStartPre=-/usr/bin/docker rm vault
+ExecStartPre=/usr/bin/docker pull vault:1.1.3
+
+ExecStart=/usr/bin/docker run \
+  --name "vault" \
+  --cap-add "IPC_LOCK" \
+  --env "SERVICE_NAME=vault" \
+  --env "SERVICE_ID=%H" \
+  --env "VIRTUAL_HOST=vault.ruhmesmeile.tools,vault3.ruhmesmeile.tools" \
+  --env "VIRTUAL_PORT=8200" \
+  --env "LETSENCRYPT_HOST=vault.ruhmesmeile.tools,vault3.ruhmesmeile.tools" \
+  --env "LETSENCRYPT_EMAIL=jonas.ulrich@ruhmesmeile.com" \
+  --env "VAULT_ADDR=http://127.0.0.1:8200" \
+  --label "container_group=infrastructure" \
+  --volume "/var/vault/config:/vault/config" \
+  --volume "/var/vault/data/file:/vault/file" \
+  vault:1.1.3 server
+
+ExecStop=-/usr/bin/docker stop vault
+
+[X-Fleet]
+MachineMetadata=role=%i

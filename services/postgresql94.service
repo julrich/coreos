@@ -1,0 +1,52 @@
+[Unit]
+Description=PostgreSQL 9.4 server container
+Documentation=https://hub.docker.com/_/postgres/
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+TimeoutSec=300s
+
+ExecStartPre=-/usr/bin/docker kill pg
+ExecStartPre=-/usr/bin/docker rm pg
+ExecStartPre=-/usr/bin/docker start pgdata
+
+ExecStart=/usr/bin/docker run --rm \
+  --name "pg" \
+  --label "container_group=infrastructure" \
+  --env "SERVICE_NAME=postgres" \
+  --env "SERVICE_ID=%H" \
+  --env "POSTGRES_PASSWORD=hHz8JotqwnQf9m" \
+  --volumes-from pgdata \
+  --publish "127.0.0.1:5432:5432" \
+  postgres:9.4
+
+ExecStartPost=-/usr/bin/docker rm pg
+
+ExecStop=/usr/bin/docker kill pg
+
+
+[X-Fleet]
+MachineMetadata=role=hq
+
+# Useful commands:
+#  * Initially run this command on the target machine: docker run -v /var/pgsql/data:/var/lib/postgresql/data --name pgdata postgres echo "data only"
+#  * Remove data-container: docker rm pgdata
+#  * Interactive postgresql shell: docker run -it --rm --link pg:pg postgres:9.4 psql -h pg -U postgres
+#  * Backup database: docker run -it --rm --link pg:pg postgres:9.4 pg_dump -h pg -U postgres database > /path/database.sql
+#  * Quit interactive postgresl shell: \q + Return
+#
+# Add a db + user (example DBNAME / USER):
+# local/$: ssh momcorphq
+# momcorpfdc/$: sudo su
+# momcorpfdc/$: docker run -it --rm --link pg:pg postgres:9.4 createuser -h pg -U postgres -w USER
+# momcorpfdc/$: docker run -it --rm --link pg:pg postgres:9.4 createdb -h pg -U postgres -w DBNAME
+# momcorpfdc/$: docker run -it --rm --link pg:pg postgres:9.4 createdb -h pg -U postgres -w USER
+# momcorpfdc/$: docker run -it --rm --link pg:pg postgres:9.4 psql -h pg -U postgres -w
+# psql (postgres)=# alter user USER with encrypted password 'PASSWORD';
+# psql (postgres)=# grant all privileges on database DBNAME to USER ;

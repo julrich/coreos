@@ -1,0 +1,33 @@
+[Unit]
+Description=Register container stop to update status in etcd for TYPO3 development webpages
+
+Requires=typo3-tech@%i.service
+
+After=typo3-tech@%i.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+EnvironmentFile=/etc/environment
+Environment="ETCD_TLSKEY=/etc/ssl/etcd/calculonc-key.pem"
+Environment="ETCD_TLSPEM=/etc/ssl/etcd/calculonc.pem"
+Environment="ETCD_CACERT=/etc/ssl/etcd/ca.pem"
+
+ExecStartPre=-/usr/bin/docker kill 'typo3-tech-stopmonitor-%i'
+ExecStartPre=-/usr/bin/docker rm 'typo3-tech-stopmonitor-%i' -v
+ExecStartPre=/usr/bin/docker pull alpine:latest
+
+ExecStart=/usr/bin/docker run --rm \
+	--name "typo3-tech-stopmonitor-%i" \
+	--label "container_group=typo3" \
+	alpine:latest \
+		tail -f /dev/null
+
+ExecStop=/usr/bin/docker stop 'typo3-tech-stopmonitor-%i'
+
+ExecStopPost=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/tech/%i/status/typo3/current "stopped $EXIT_STATUS" > /dev/null'
+ExecStopPost=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/tech/%i/status/typo3/stopped "$(date +%%s)" > /dev/null'
+
+[X-Fleet]
+MachineOf=typo3-tech@%i.service

@@ -1,0 +1,73 @@
+[Unit]
+Description=Container for static development webpages
+Documentation=https://github.com/ruhmesmeile/php-nginx-static
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+ExecStartPre=-/usr/bin/docker kill 'static-tech-%i'
+ExecStartPre=-/usr/bin/docker rm 'static-tech-%i'
+ExecStartPre=/usr/bin/docker pull ruhmesmeile/php-nginx-static:latest
+
+ExecStartPre=/bin/bash -c '\
+  echo "[SYSTEMD] Getting current project sources"; \
+  rm -rf /srv/source/static/tech/%i/*; \
+  while read -r fullfile ; do \
+    echo "[SYSTEMD] Extracting file: $$fullfile"; \
+    mkdir -p /srv/source/static/tech/%i/; \
+    tar -zxf "$$fullfile" -C /srv/source/static/tech/%i/; \
+  done < <(find /srv/storage/artifacts/static/tech/%i -path \'*.sources.tar.gz\'); \
+  ( \
+      cd /srv/source/static/tech/%i; \
+      if [ ! -d web ]; then \
+        rm -rf /tmp/web/%i; \
+        mkdir -p /tmp/web/%i; \
+        shopt -s dotglob; \
+        mv * /tmp/web/%i/ || true; \
+        shopt -u dotglob; \
+        mv /tmp/web/%i /srv/source/static/tech/%i/web; \
+      fi; \
+      if [ -d web/server  ]; then \
+        mv web/server ./; \
+      fi; \
+  );'
+
+ExecStart=/usr/bin/docker run \
+  --name "static-tech-%i" --rm \
+  --env "SERVICE_80_IGNORE=true" \
+  --env "SERVICE_443_NAME=static-tech" \
+  --env "SERVICE_3003_NAME=static-tech-api" \
+  --env "SERVICE_ID=%i" \
+  --env "VIRTUAL_HOST=%i.static.ruhmesmeile.tech" \
+  --env "LOCATION_HOST=%i.static.ruhmesmeile.tech" \
+  --env "LETSENCRYPT_HOST=%i.static.ruhmesmeile.tech" \
+  --env "LETSENCRYPT_EMAIL=jonas.ulrich@ruhmesmeile.com" \
+  --env "APPLICATION_PATH=/app" \
+  --env "WEB_DOCUMENT_ROOT=/app/web" \
+  --env "WEB_DOCUMENT_INDEX=index.html" \
+  --env "WEB_ALIAS_DOMAIN=%i.static.ruhmesmeile.tech" \
+  --env "SMTP_HOST=%i.static-tech-mail.services.ruhmesmeile.local" \
+  --env "SMTP_PORT=1025" \
+  --label "container_group=static" \
+  --volume "/srv/source/static/tech/%i:/app" \
+  ruhmesmeile/php-nginx-static:latest
+
+ExecStartPost=-/bin/bash -c '\
+  echo "%i"\':$$apr1$$GvBzdmf.$$Eld/pvDX6FR8zkxNeXxlZ.\' > /srv/storage/config/nginx/data/htpasswd/%i.static.ruhmesmeile.tech;'
+
+ExecStartPost=-/bin/bash -c '\
+  if [ -d /srv/source/static/tech/%i/server ]; then \
+    until [ "$$(docker inspect -f {{.State.Running}} static-tech-%i)" == "true" ]; do sleep 1; done; \
+    docker exec -t --user root static-tech-%i bash -c \' \
+      docker-service-enable node;\'; \
+    /opt/bin/fleetctl destroy static-tech-api@%i.service || true; \
+    /opt/bin/fleetctl start static-tech-api@%i.service; \
+  fi'
+
+[X-Fleet]
+MachineMetadata=role=vds

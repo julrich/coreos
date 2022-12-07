@@ -1,0 +1,36 @@
+[Unit]
+Description=Mail container for static development webpages
+Documentation=https://github.com/mailhog/MailHog
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+ExecStartPre=-/usr/bin/docker kill 'static-review-mail-%i'
+ExecStartPre=-/usr/bin/docker rm 'static-review-mail-%i' -v
+ExecStartPre=/usr/bin/docker pull mailhog/mailhog:latest
+
+ExecStart=/usr/bin/docker run \
+  --name "static-review-mail-%i" --rm \
+  --env "SERVICE_1080_NAME=static-review-mail-interface" \
+  --env "SERVICE_1025_NAME=static-review-mail" \
+  --env "SERVICE_ID=%i" \
+  --env "VIRTUAL_HOST=%i.mail-static.ruhmesmeile.review" \
+  --env "VIRTUAL_PORT=1080" \
+  --env "LETSENCRYPT_HOST=%i.mail-static.ruhmesmeile.review" \
+  --env "LETSENCRYPT_EMAIL=jonas.ulrich@ruhmesmeile.com" \
+  --env "MH_API_BIND_ADDR=0.0.0.0:1080" \
+  --env "MH_UI_BIND_ADDR=0.0.0.0:1080" \
+  --expose "1080" \
+  --label "container_group=static" \
+  mailhog/mailhog:latest
+
+ExecStartPost=-/bin/bash -c '\
+ echo "%i"\':$$apr1$$GvBzdmf.$$Eld/pvDX6FR8zkxNeXxlZ.\' > /srv/storage/config/nginx/data/htpasswd/%i.mail-static.ruhmesmeile.review;'
+
+[X-Fleet]
+MachineMetadata=role=vds

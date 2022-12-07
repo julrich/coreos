@@ -1,0 +1,34 @@
+[Unit]
+Description=Verdaccio, self-hosted npm registry container
+Documentation=https://verdaccio.org/docs/en/docker.html
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+TimeoutSec=300s
+
+ExecStartPre=/usr/bin/docker pull ruhmesmeile/verdaccio:latest
+ExecStartPre=-/usr/bin/docker kill verdaccio
+ExecStartPre=-/usr/bin/docker rm verdaccio -v
+
+ExecStart=/usr/bin/docker run \
+  --name "verdaccio" --rm \
+  --env "SERVICE_NAME=verdaccio" \
+  --env "SERVICE_ID=%H" \
+  --env "VIRTUAL_HOST=verdaccio.ruhmesmeile.tools" \
+  --env "VIRTUAL_PORT=4873" \
+  --env "LETSENCRYPT_HOST=verdaccio.ruhmesmeile.tools" \
+  --env "LETSENCRYPT_EMAIL=infrastructure@ruhmesmeile.com" \
+  --volume "/var/verdaccio/conf:/verdaccio/conf" \
+  --volume "/var/verdaccio/storage:/verdaccio/storage" \
+  --volume "/var/verdaccio/plugins:/verdaccio/plugins" \
+  --label "container_group=infrastructure" \
+  ruhmesmeile/verdaccio:latest
+
+[X-Fleet]
+MachineMetadata=role=fdc

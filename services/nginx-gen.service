@@ -1,0 +1,35 @@
+[Unit]
+Description=Nginx Generator container (docker-gen)
+Documentation=https://github.com/jwilder/docker-gen
+
+After=docker.service
+After=nginx.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+ExecStartPre=-/usr/bin/docker kill nginx-gen
+ExecStartPre=-/usr/bin/docker rm nginx-gen
+ExecStartPre=/usr/bin/docker pull jwilder/docker-gen:latest
+ExecStartPre=/usr/bin/systemctl is-active docker.service
+ExecStartPre=/usr/bin/systemctl is-active nginx.service
+
+ExecStart=/usr/bin/docker run \
+  --name "nginx-gen" \
+  --label "container_group=nginx-reverse" \
+  --volumes-from nginx \
+  --volume "/var/nginx/data/templates/nginx.tmpl:/etc/docker-gen/templates/nginx.tmpl:ro" \
+  --volume "/var/run/docker.sock:/tmp/docker.sock:ro" \
+  jwilder/docker-gen \
+  -notify-sighup nginx -watch -wait 5s:30s /etc/docker-gen/templates/nginx.tmpl /etc/nginx/conf.d/default.conf
+
+ExecStop=-/usr/bin/docker stop nginx-gen
+
+[X-Fleet]
+Global=true
+MachineMetadata=role=hq
+MachineMetadata=role=doop
+MachineMetadata=role=spne
+
+# This nginx-gen container using the docker-gen image will generate a 'default.conf' file from the 'nginx.tmpl' located in volumes/proxy/templates.

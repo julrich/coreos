@@ -1,0 +1,39 @@
+[Unit]
+Description=Hydra login-consent-provider for Atlassian Crowd
+Documentation=https://github.com/ruhmesmeile/hydra-crowdprovider
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+TimeoutSec=300s
+
+ExecStartPre=-/usr/bin/docker kill 'hydra-crowdprovider'
+ExecStartPre=-/usr/bin/docker rm 'hydra-crowdprovider' -v
+ExecStartPre=/usr/bin/docker pull ruhmesmeile/hydra-crowdprovider:1.0.1
+
+ExecStart=/usr/bin/docker run \
+  --name "hydra-crowdprovider" --rm \
+  --env "SERVICE_3000_NAME=hydra-crowdprovider" \
+  --env "SERVICE_ID=%i" \
+  --env "VIRTUAL_HOST=crowdprovider.ruhmesmeile.tools,crowdprovider3.ruhmesmeile.tools" \
+  --env "VIRTUAL_PORT=3000" \
+  --env "LETSENCRYPT_HOST=crowdprovider.ruhmesmeile.tools,crowdprovider3.ruhmesmeile.tools" \
+  --env "LETSENCRYPT_EMAIL=jonas.ulrich@ruhmesmeile.com" \
+  --env "HYDRA_ADMIN_URL=https://hydraadmin.ruhmesmeile.tools" \
+  --env "MOCK_TLS_TERMINATION=y" \
+  --env "NODE_TLS_REJECT_UNAUTHORIZED=0" \
+  --env "CROWD_BASEURL=https://crowd.ruhmesmeile.tools/crowd" \
+  --env "CROWD_APPLICATION=nextcloud" \
+  --env "CROWD_PASSWORD=MzjTwA9zZB&E" \
+  --env "CROWD_COOKIE_DOMAIN=.ruhmesmeile.tools" \
+  --label "container_group=infrastructure" \
+  --expose "3000" \
+  ruhmesmeile/hydra-crowdprovider:1.0.1
+
+[X-Fleet]
+MachineMetadata=role=hq

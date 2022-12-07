@@ -1,0 +1,27 @@
+[Unit]
+Description=Cache warmer for TYPO3 master webpages
+Documentation=https://github.com/ruhmesmeile/node-cache-warmer
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Type=oneshot
+TimeoutSec=2h
+
+ExecStartPre=-/usr/bin/docker kill 'typo3-review-cachewarmer-%i'
+ExecStartPre=-/usr/bin/docker rm 'typo3-review-cachewarmer-%i' -v
+ExecStartPre=/usr/bin/docker pull ruhmesmeile/node-cache-warmer:latest
+
+ExecStart=/usr/bin/docker run \
+  --name "typo3-review-cachewarmer-%i" --rm \
+  --env "CRAWL_PAGE=https://%i.typo3.ruhmesmeile.review" \
+  --env "CRAWL_USER=%i" \
+  --env "CRAWL_PASSWORD=betatester" \
+  --env "CRAWL_LINKSELECTOR=a" \
+  --label "container_group=typo3" \
+  ruhmesmeile/node-cache-warmer:latest
+
+[X-Fleet]
+MachineMetadata=role=ttt

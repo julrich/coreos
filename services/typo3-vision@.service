@@ -1,0 +1,122 @@
+[Unit]
+Description=Container for TYPO3 development webpages, based on webdevops image
+Documentation=https://github.com/ruhmesmeile/php-nginx-typo3
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+TimeoutSec=900s
+
+EnvironmentFile=/etc/environment
+Environment="ETCD_TLSKEY=/etc/ssl/etcd/calculonc-key.pem"
+Environment="ETCD_TLSPEM=/etc/ssl/etcd/calculonc.pem"
+Environment="ETCD_CACERT=/etc/ssl/etcd/ca.pem"
+
+ExecStartPre=-/bin/bash -c '/usr/bin/systemctl set-environment NGINX_PROXY_IP=$(getent hosts momcorpfdc.nginx-balancer-https.services.ruhmesmeile.local | awk \'{ print $1 }\')'
+ExecStartPre=-/usr/bin/docker kill 'typo3-vision-%i'
+ExecStartPre=-/usr/bin/docker rm 'typo3-vision-%i' -v
+ExecStartPre=-/usr/bin/docker rm 'typo3-vision-%i-volume' -v
+ExecStartPre=-/usr/bin/docker create -v /srv/storage/typo3/vision/%i/fileadmin:/app/web/fileadmin -v /srv/storage/typo3/vision/%i/uploads:/app/web/uploads -v /srv/storage/typo3/vision/%i/private:/app/private --name typo3-vision-%i-volume busybox /bin/true
+ExecStartPre=/usr/bin/docker pull ruhmesmeile/php-nginx-typo3:7.2
+
+ExecStartPre=/bin/bash -c '\
+  echo "[SYSTEMD] Getting current project sources"; \
+  cp /srv/source/typo3/vision/%i/web/typo3conf/LocalConfiguration.php /srv/storage/artifacts/typo3/vision/%i/LocalConfiguration.php || true; \
+  rm -rf /srv/source/typo3/vision/%i/*; \
+  while read -r fullfile ; do \
+    echo "[SYSTEMD] Extracting file: $$fullfile"; \
+    mkdir -p /srv/source/typo3/vision/%i/; \
+    tar -zxf "$$fullfile" -C /srv/source/typo3/vision/%i/; \
+  done < <(find /srv/storage/artifacts/typo3/vision/%i -path \'*.sources.tar.gz\'); \
+  cp /srv/storage/artifacts/typo3/vision/%i/LocalConfiguration.php /srv/source/typo3/vision/%i/web/typo3conf/LocalConfiguration.php || true; \
+  mkdir -p /srv/storage/typo3/vision/%i/fileadmin /srv/storage/typo3/vision/%i/uploads; \
+  cp -R /srv/source/typo3/vision/%i/web/fileadmin/* /srv/storage/typo3/vision/%i/fileadmin/ || true; \
+  cp -R /srv/source/typo3/vision/%i/web/uploads/* /srv/storage/typo3/vision/%i/uploads/ || true;'
+
+ExecStartPre=/bin/bash -c '\
+  echo "[SYSTEMD] Writing NGINX_PROXY_IP to .env-file"; \
+  echo "TYPO3__SYS__reverseProxyIP=${NGINX_PROXY_IP}" >> "/srv/source/typo3/vision/%i/typo3-preview.project.env";'
+
+ExecStart=/usr/bin/docker run \
+  --name "typo3-vision-%i" --rm \
+  --env-file "/srv/source/typo3/vision/%i/typo3-preview.project.env" \
+  --env "TYPO3__SYS__reverseProxyIP=${NGINX_PROXY_IP}" \
+  --user "root" \
+  --security-opt="apparmor=unconfined" \
+  --cap-add=SYS_PTRACE \
+  --label "container_group=typo3" \
+  --volumes-from "typo3-vision-%i-volume" \
+  --volume "/srv/source/typo3/vision/%i/typo3-preview.project.env:/app/.env" \
+  --volume "/srv/source/typo3/vision/%i/web:/app/web" \
+  --volume "/srv/source/typo3/vision/%i/vendor:/app/vendor" \
+  --volume "/srv/source/typo3/vision/%i/conf:/app/conf" \
+  --volume "/srv/source/typo3/vision/%i/config:/app/config" \
+  --volume "/srv/source/typo3/vision/%i/src:/app/src" \
+  --volume "/srv/source/typo3/vision/%i/util:/app/util" \
+  --volume "/srv/source/typo3/vision/%i/var/cache/typo3:/app/var/cache" \
+  ruhmesmeile/php-nginx-typo3:7.2
+
+ExecStartPost=-/bin/bash -c '\
+  until [ "$$(docker inspect -f {{.State.Running}} typo3-vision-%i)" == "true" ]; do sleep 1; done; \
+  echo "[SYSTEMD] Fixing permissions"; \
+  docker exec -t typo3-vision-%i bash -c \'\
+    chown -hR application:application /app; \
+    chmod -R a+s /app; \
+    vendor/bin/typo3cms install:fixfolderstructure; \
+    vendor/bin/typo3cms cache:flush --force || true; \
+    curl https://raw.githubusercontent.com/krakjoe/apcu/master/apc.php > web/apc.php; \
+    chown -h application:application /app/web/apc.php; \
+    service ssh start || true; \
+    touch conf/stagingdev.php;\';'
+
+ExecStartPost=-/bin/bash -c '\
+  if [ -e /srv/source/typo3/vision/%i/web/STATIC ]; \
+  then \
+    rm /srv/source/typo3/vision/%i/web/STATIC; \
+    cp /srv/storage/typo3/vision/%i/database/*.sql /srv/source/typo3/vision/%i/web/; \
+    until [ "$$(docker inspect -f {{.State.Running}} typo3-vision-%i)" == "true" ]; do sleep 1; done; \
+    docker exec -t typo3-vision-%i bash -c \'\
+      service cron stop; \
+      service nginx stop; \
+      echo "[SYSTEMD] Install: Importing Database"; \
+      MSQL=mysql.services.ruhmesmeile.local; \
+      cat web/*.sql | mysql --max_allowed_packet=512M -h $$MSQL -u rm-proxy -poxidNyzuuU37cE || true; \
+      echo "[SYSTEMD] Install: Updating Database Schema"; \
+      vendor/bin/typo3cms database:updateschema || true; \
+      vendor/bin/typo3cms install:generatePackagestates --framework-extensions $$TYPO3_ACTIVE_FRAMEWORK_EXTENSIONS --excluded-extensions $$TYPO3_EXCLUDED_EXTENSIONS; \
+      vendor/bin/typo3cms install:fixfolderstructure; \
+      service cron start; \
+      service nginx start;\'; \
+  fi;'
+
+ExecStartPost=-/bin/bash -c '\
+  if [ -e /srv/storage/artifacts/typo3/vision/%i/INSTALL ]; \
+  then \
+    echo "[SYSTEMD] Moving files and starting install service"; \
+    while read -r fullfile ; do \
+      echo "[SYSTEMD] Moving file: $$fullfile"; \
+      until ! err=$$(lsof $$fullfile 2>&1 > /dev/null); do sleep 1; done; \
+      if [ -z "$$err" ]; then \
+        mv $$fullfile /srv/source/typo3/vision/%i/web/$$(echo $${fullfile##*/} | cut -f 2 -d \'-\'); \
+      fi; \
+    done < <(find /srv/storage/artifacts/typo3/vision/%i -path \'*.files.tar.gz\' -o -path \'*.sql.bz2\'); \
+    rm /srv/storage/artifacts/typo3/vision/%i/INSTALL; \
+    /opt/bin/fleetctl destroy typo3-vision-install@%i.service || true; \
+    /opt/bin/fleetctl start typo3-vision-install@%i.service; \
+  fi; \
+  if [ -e /srv/source/typo3/vision/%i/web/UPGRADE ]; \
+  then \
+    rm /srv/source/typo3/vision/%i/web/UPGRADE; \
+    /opt/bin/fleetctl destroy typo3-vision-upgrade@%i.service || true; \
+    /opt/bin/fleetctl start typo3-vision-upgrade@%i.service; \
+  fi;'
+
+[X-Fleet]
+MachineMetadata=role=ttt
+
+# To view the contents of the used environment file, see: https://bitbucket.ruhmesmeile.tools/snippets/bb7e910eb69b496396828c557c08a3aa

@@ -1,0 +1,11 @@
+[Unit]
+Description=Path watcher for autodeploy of static artifacts for staging branches
+
+[Path]
+DirectoryNotEmpty=/srv/artifacts/static/vision
+
+[Install]
+WantedBy=multi-user.target
+
+[X-Fleet]
+MachineOf=static-vision-autodeploy.service

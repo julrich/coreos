@@ -1,0 +1,29 @@
+[Unit]
+Description=TIKA container for TYPO3 production webpages
+Documentation=https://github.com/LogicalSpark/docker-tikaserver
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+ExecStartPre=-/usr/bin/docker kill 'tika'
+ExecStartPre=-/usr/bin/docker rm 'tika' -v
+ExecStartPre=/usr/bin/docker pull logicalspark/docker-tikaserver:latest
+
+ExecStart=/usr/bin/docker run \
+  --name "tika" --rm \
+  --env "SERVICE_9998_NAME=tika" \
+  --env "SERVICE_ID=%i" \
+  --env "VIRTUAL_HOST=tika.ruhmesmeile.tools" \
+  --env "VIRTUAL_PORT=9998" \
+  --env "LETSENCRYPT_HOST=tika.ruhmesmeile.tools" \
+  --env "LETSENCRYPT_EMAIL=jonas.ulrich@ruhmesmeile.com" \
+  --label "container_group=typo3" \
+  logicalspark/docker-tikaserver:latest
+
+[X-Fleet]
+MachineMetadata=role=%i

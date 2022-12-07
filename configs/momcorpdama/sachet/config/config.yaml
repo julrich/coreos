@@ -1,0 +1,19 @@
+providers:
+  twilio:
+    account_sid: 'ACd9b94c5c9f2ddbf83739e9aa949223fc'
+    auth_token: 'ffab3b261ede1508ea7571d0047a5f0a'
+
+templates:
+  - twilio.tmpl
+
+receivers:
+  - name: 'team-bonn'
+    provider: 'twilio'
+    to:
+      - '+4917661399057'
+    from: '+12067373499'
+#  - name: 'team-cologne'
+#    provider: 'twilio'
+#    to:
+#      - '+49...'
+#    from: '+12067373499'

@@ -1,0 +1,32 @@
+[Unit]
+Description=Autodeploy of static staging artifacts
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c '\
+  PK=""; \
+  BASE=/srv/storage/artifacts/static/vision; \
+  ARTIFACT=/srv/artifacts/static/vision; \
+  while [ $$(find $$ARTIFACT -path \'*.sources.tar.gz\' | wc -l) -eq 0 ] ; do sleep 2; done; \
+  echo "Moving static project sources to storage:"; \
+  while read -r fullfile ; do \
+    echo Moving file: "$$fullfile"; \
+    until ! err=$$(lsof $$fullfile 2>&1 > /dev/null); do sleep 1; done; \
+    if [ -z "$$err" ]; then \
+      PK="$$(echo $${fullfile##*/} | cut -f 1 -d \'.\' | cut -d \'-\' -f2- )"; \
+      mkdir -p $$BASE/$$PK; \
+      rm -rf $$BASE/$$PK/*; \
+      mv "$$fullfile" $$BASE/$$PK/; \
+    fi; \
+  done < <(find $$ARTIFACT -path \'*.sources.tar.gz\'); \
+  /opt/bin/fleetctl destroy static-vision-mail@$$PK.service || true; \
+  /opt/bin/fleetctl destroy static-vision@$$PK.service || true; \
+  sleep 15s; \
+  /opt/bin/fleetctl start static-vision@$$PK.service; \
+  /opt/bin/fleetctl start static-vision-mail@$$PK.service;'
+
+[Install]
+WantedBy=multi-user.target
+
+[X-Fleet]
+MachineMetadata=role=fdc

@@ -1,0 +1,140 @@
+[Unit]
+Description=Installs TYPO3 according to environment variables and composer dependencies
+Documentation=https://bitbucket.ruhmesmeile.tools/projects/T3/repos/rm-dist/browse
+
+[Service]
+Type=oneshot
+
+TimeoutSec=900s
+
+EnvironmentFile=/etc/environment
+Environment="ETCD_TLSKEY=/etc/ssl/etcd/calculonc-key.pem"
+Environment="ETCD_TLSPEM=/etc/ssl/etcd/calculonc.pem"
+Environment="ETCD_CACERT=/etc/ssl/etcd/ca.pem"
+
+ExecStartPre=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/dev/%i/status/typo3/current "installing - starting" > /dev/null'
+ExecStartPre=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/dev/%i/status/typo3/installing "$$(date +%%s)" > /dev/null'
+
+ExecStartPre=/bin/bash -c '\
+  until [ "$$(docker inspect -f {{.State.Running}} typo3-dev-%i)" == "true" ]; do sleep 1; done; \
+  docker exec -t typo3-dev-%i bash -c \'\
+    echo "[SYSTEMD] Installation starting, cleaning up"; \
+    service cron stop; \
+    service nginx stop; \
+    MSQL=mysql.services.ruhmesmeile.local; \
+    echo $$LOCATION_HOST >> web/locations; \
+    rm -f web/typo3conf/LocalConfiguration.php web/typo3conf/PackageStates.php; \
+    rm -rf web/typo3temp/*; \
+    mysql -h $$MSQL -P3306 -u rm-proxy -poxidNyzuuU37cE -e "DROP DATABASE IF EXISTS %i_dev; CREATE DATABASE %i_dev COLLATE utf8_unicode_ci;"\''
+
+ExecStartPre=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/dev/%i/status/typo3/current "installing - cleared" > /dev/null'
+ExecStartPre=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/dev/%i/status/typo3/installing "$$(date +%%s)" > /dev/null'
+
+ExecStart=/bin/bash -c '\
+  until [ "$$(docker inspect -f {{.State.Running}} typo3-dev-%i)" == "true" ]; do sleep 1; done; \
+  docker exec -t typo3-dev-%i bash -c \'\
+    echo "[SYSTEMD] Installing TYPO3"; \
+    NOINTERACTIONFLAG="--no-interaction"; \
+    if [ -z "$$(cat web/typo3/sysext/core/ext_emconf.php | grep \'version\' | grep 9.5)" ]; then NOINTERACTIONFLAG="--non-interactive"; fi; \
+    vendor/bin/typo3cms install:setup \
+      $$NOINTERACTIONFLAG \
+      --database-user-name $$TYPO3__DB__Connections__Default__user \
+      --database-user-password $$TYPO3__DB__Connections__Default__password \
+      --database-host-name $$TYPO3__DB__Connections__Default__host \
+      --database-port $$TYPO3__DB__Connections__Default__port \
+      --database-name $$TYPO3__DB__Connections__Default__dbname \
+      --admin-user-name $$admin_username \
+      --admin-password $$admin_password \
+    rm -f web/typo3conf/PackageStates.php; \
+    vendor/bin/typo3cms cache:flush --force; \
+    service php-fpm restart; \
+    vendor/bin/typo3cms install:generatePackagestates --framework-extensions $$TYPO3_ACTIVE_FRAMEWORK_EXTENSIONS --excluded-extensions $$TYPO3_EXCLUDED_EXTENSIONS; \
+    vendor/bin/typo3cms install:fixfolderstructure;\''
+
+ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/dev/%i/status/typo3/current "installing - installed" > /dev/null'
+ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/dev/%i/status/typo3/installing "$$(date +%%s)" > /dev/null'
+
+ExecStartPost=/bin/bash -c '\
+  until [ "$$(docker inspect -f {{.State.Running}} typo3-dev-%i)" == "true" ]; do sleep 1; done; \
+  docker exec -t typo3-dev-%i bash -c \'\
+    echo "[SYSTEMD] Importing Data"; \
+    MSQL=mysql.services.ruhmesmeile.local; \
+    bzcat web/%i.structure.sql.bz2 | mysql --max_allowed_packet=256M -h $$MSQL -u rm-proxy -poxidNyzuuU37cE || true; \
+    bzcat web/%i.data.sql.bz2 | mysql --max_allowed_packet=256M -h $$MSQL -u rm-proxy -poxidNyzuuU37cE || true; \
+    vendor/bin/typo3cms database:updateschema || true; \
+    rm -rf web/fileadmin/* web/uploads/* private/* || true; \
+    tar -zxf web/%i.files.tar.gz -C web || true;\'; \
+  cp -R /srv/source/typo3/dev/%i/web/fileadmin/* /srv/storage/typo3/dev/%i/fileadmin/ || true; \
+  cp -R /srv/source/typo3/dev/%i/web/uploads/* /srv/storage/typo3/dev/%i/uploads/ || true; \
+  echo "[SYSTEMD] Copy LocalConfiguration.php to artifacts folder"; \
+  cp /srv/source/typo3/dev/%i/web/typo3conf/LocalConfiguration.php /srv/storage/artifacts/typo3/dev/%i/LocalConfiguration.php || true;'
+
+ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/dev/%i/status/typo3/current "installing - imported" > /dev/null'
+ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/dev/%i/status/typo3/installing "$$(date +%%s)" > /dev/null'
+
+ExecStartPost=/bin/bash -c '\
+  until [ "$$(docker inspect -f {{.State.Running}} typo3-dev-%i)" == "true" ]; do sleep 1; done; \
+  docker exec -t typo3-dev-%i bash -c \'\
+    echo "[SYSTEMD] Fixing permissions"; \
+    chown -hR application:application /app; \
+    chmod -R a+s /app; \
+    rm -rf web/typo3temp/*; \
+    service cron start; \
+    service nginx start;\''
+
+ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/dev/%i/status/typo3/current "installing - permissions" > /dev/null'
+ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/dev/%i/status/typo3/installing "$$(date +%%s)" > /dev/null'
+
+ExecStartPost=/bin/bash -c '\
+  echo "[SYSTEMD] Creating and moving nginx configuration"; \
+  HTPWD=\':$$apr1$$GvBzdmf.$$Eld/pvDX6FR8zkxNeXxlZ.\'; \
+  IFS=, read -r -a DRS < /srv/source/typo3/dev/%i/web/locations; \
+  for DR in "$${DRS[@]}"; do \
+    echo "$$(echo $$DR | cut -f 1 -d \'.\')""$$HTPWD" > /srv/source/typo3/dev/%i/web/"$$DR"; \
+    echo "client_max_body_size 50m;" > /srv/source/typo3/dev/%i/web/"$$DR"_location; \
+  done; \
+  chown root:root /srv/source/typo3/dev/%i/web/*.typo3.ruhmesmeile.dev*; \
+  mv /srv/source/typo3/dev/%i/web/*.typo3.ruhmesmeile.dev /srv/storage/config/nginx/data/htpasswd/; \
+  mv /srv/source/typo3/dev/%i/web/*.typo3.ruhmesmeile.dev_location /srv/storage/config/nginx/data/vhost.d/; \
+  cp /srv/source/typo3/dev/%i/web/typo3conf/LocalConfiguration.php /srv/storage/artifacts/typo3/dev/%i/LocalConfiguration.php; \
+  echo "[SYSTEMD] Starting SOLR"; \
+  if [ -d "/srv/source/typo3/dev/%i/web/typo3conf/ext/solr" ]; \
+  then \
+    for DR in "$${DRS[@]}"; do \
+      KEY="$$(echo $$DR | cut -f 1 -d \'.\')"; \
+      /opt/bin/fleetctl stop "typo3-dev-solr@$$KEY.service" || true; \
+      /opt/bin/fleetctl destroy "typo3-dev-solr@$$KEY.service" || true; \
+      /opt/bin/fleetctl start "typo3-dev-solr@$$KEY.service"; \
+      echo "$$KEY"\':$$apr1$$GvBzdmf.$$Eld/pvDX6FR8zkxNeXxlZ.\' > "/srv/storage/config/nginx/data/htpasswd/$$KEY.solr.ruhmesmeile.dev"; \
+    done; \
+  fi; \
+  echo "[SYSTEMD] Starting Mail Catcher"; \
+  /opt/bin/fleetctl stop typo3-dev-mail@%i.service || true; \
+  /opt/bin/fleetctl destroy typo3-dev-mail@%i.service || true; \
+  /opt/bin/fleetctl start typo3-dev-mail@%i.service; \
+  echo "%i"\':$$apr1$$GvBzdmf.$$Eld/pvDX6FR8zkxNeXxlZ.\' > /srv/storage/config/nginx/data/htpasswd/%i.mail.ruhmesmeile.dev; \
+  rm -f /srv/source/typo3/dev/%i/web/locations; \
+  echo "[SYSTEMD] Installation finished"; \
+  /opt/bin/fleetctl stop typo3-dev-exporter@%i.service || true; \
+  /opt/bin/fleetctl destroy typo3-dev-exporter@%i.service || true; \
+  /opt/bin/fleetctl start typo3-dev-exporter@%i.service; \
+  etcdctl --no-sync set /ruhmesmeile/projects/typo3/dev/%i/status/typo3/current "installing - fleet" > /dev/null; \
+  etcdctl --no-sync set /ruhmesmeile/projects/typo3/dev/%i/status/typo3/installing "$$(date +%%s)" > /dev/null; \
+  etcdctl --no-sync set /ruhmesmeile/projects/typo3/dev/%i/status/typo3/current "installed" > /dev/null; \
+  etcdctl --no-sync set /ruhmesmeile/projects/typo3/dev/%i/status/typo3/installed "$$(date +%%s)" > /dev/null; \
+  etcdctl --no-sync set /ruhmesmeile/projects/typo3/dev/%i/status/typo3/current "started" > /dev/null; \
+  /opt/bin/fleetctl destroy typo3-dev-install@%i.service || true;'
+
+ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/dev/%i/status/typo3/current "installed" > /dev/null'
+ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/dev/%i/status/typo3/installed "$$(date +%%s)" > /dev/null'
+
+[X-Fleet]
+MachineOf=typo3-dev@%i.service
+
+# Sorry some variables had to be shortened, but we're running into the max limit for ExecStart in systemd / fleet (~2000 chars).
+#
+# Variables:
+#
+# * DRS = domain records for this TYPO3
+# * DR = domain record for this TYPO3
+# * HTPWD = htpasswd, MD5 encoded (betatester)

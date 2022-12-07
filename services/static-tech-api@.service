@@ -1,0 +1,30 @@
+[Unit]
+Description=Container for static development webpage APIs
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+ExecStartPre=-/usr/bin/docker kill 'static-tech-api-%i'
+ExecStartPre=-/usr/bin/docker rm 'static-tech-api-%i'
+ExecStartPre=/usr/bin/docker pull alpine/socat:1.0.3
+
+ExecStart=/usr/bin/docker run \
+  --name "static-tech-api-%i" --rm \
+  --env "VIRTUAL_HOST=%i.api.ruhmesmeile.tech" \
+  --env "VIRTUAL_PORT=3003" \
+  --env "LETSENCRYPT_HOST=%i.api.ruhmesmeile.tech" \
+  --env "LETSENCRYPT_EMAIL=infrastructure@ruhmesmeile.com" \
+  --label "container_group=static" \
+  --expose "3003" \
+  alpine/socat:1.0.3 \
+    TCP-LISTEN:3003,fork TCP:%i.static-tech.services.ruhmesmeile.local:3003
+
+ExecStop=/usr/bin/docker stop 'static-tech-api-%i'
+
+[X-Fleet]
+MachineOf=static-tech@%i.service

@@ -1,0 +1,30 @@
+[Unit]
+Description=Autodeploy of static performance artifacts
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c '\
+  BASE=/srv/storage/artifacts/performance; \
+  ARTIFACT=/srv/artifacts/performance; \
+  VHOST=""; \
+  while [ $$(find $$ARTIFACT -path \'*.performance.tar.gz\' | wc -l) -eq 0 ] ; do sleep 2; done; \
+  echo "Moving static project sources to storage:"; \
+  while read -r fullfile ; do \
+    echo Moving file: "$$fullfile"; \
+    until ! err=$$(lsof $$fullfile 2>&1 > /dev/null); do sleep 1; done; \
+    if [ -z "$$err" ]; then \
+      VHOST="$$(echo $${fullfile##*/} | cut -f 1,2 -d \'.\' | cut -d \'-\' -f2- )"; \
+      mkdir -p $$BASE/$$VHOST; \
+      rm -rf $$BASE/$$VHOST/*; \
+      mv "$$fullfile" $$BASE/$$VHOST/; \
+    fi; \
+  done < <(find $$ARTIFACT -path \'*.performance.tar.gz\'); \
+  /opt/bin/fleetctl destroy static-rocks@$$VHOST.service || true; \
+  sleep 15s; \
+  /opt/bin/fleetctl start static-rocks@$$VHOST.service;'
+
+[Install]
+WantedBy=multi-user.target
+
+[X-Fleet]
+MachineMetadata=role=fdc

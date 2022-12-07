@@ -1,0 +1,4 @@
+https://sparstrom-dev.taktsoft.com/
+https://sparstrom-dev.taktsoft.com/offers/1
+https://sparstrom-staging.taktsoft.com/
+https://sparstrom-staging.taktsoft.com/offers/1

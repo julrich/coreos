@@ -1,0 +1,16 @@
+[Unit]
+Description=Remove failed password attempts and captcha flag for Atlassian REST-APIs user `infrastructure`
+Documentation=https://docs.atlassian.com/atlassian-crowd/3.5.0/REST/#usermanagement/1/user-storeUserAttributes
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Type=oneshot
+
+ExecStart=/bin/bash -x -c '\
+  /bin/curl -k -u "reset-infrastructure-captcha:78zjVx_rwCmD6YPp6UJR" -X POST --data "{ \\"attributes\\": [{ \\"name\\": \\"invalidPasswordAttempts\\", \\"values\\": [\\"0\\"]  }, { \\"name\\": \\"requiresPasswordChange\\", \\"values\\": [\\"false\\"] } ] }" -H "Content-Type: application/json" https://crowd.ruhmesmeile.tools/crowd/rest/usermanagement/1/user/attribute\?username\=infrastructure'
+
+[X-Fleet]
+MachineMetadata=role=hq

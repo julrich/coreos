@@ -1,0 +1,104 @@
+[Unit]
+Description=Atlassian Bamboo container
+Documentation=https://github.com/cptactionhank/docker-atlassian-bamboo
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+TimeoutSec=1800s
+
+ExecStartPre=/usr/bin/docker pull cptactionhank/atlassian-bamboo:6.5.0
+ExecStartPre=-/usr/bin/docker rm --volumes --force "bamboo"
+ExecStartPre=/usr/bin/docker create \
+  --name "bamboo" \
+  --env "SERVICE_8085_NAME=bamboo" \
+  --env "SERVICE_8086_NAME=bamboo-internal" \
+  --env "SERVICE_54663_NAME=bamboo-broker" \
+  --env "SERVICE_ID=%H" \
+  --env "CATALINA_OPTS=-Xms2048m -Xmx3072m -Datlassian.plugins.enable.wait=300" \
+  --env "VIRTUAL_HOST=bamboo.ruhmesmeile.tools,bambooo.ruhmesmeile.tools" \
+  --env "VIRTUAL_PORT=8085" \
+  --env "LETSENCRYPT_HOST=bamboo.ruhmesmeile.tools,bambooo.ruhmesmeile.tools" \
+  --env "LETSENCRYPT_EMAIL=jonas.ulrich@ruhmesmeile.com" \
+  --env "X_PROXY_NAME=bamboo.ruhmesmeile.tools" \
+  --env "X_PROXY_PORT=443" \
+  --env "X_PROXY_SCHEME=https" \
+  --env "DOCKER_API_VERSION=1.21" \
+  --env "DOCKER_HOST=momcorpdoop.ruhmesmeile.solutions:2376" \
+  --env "DOCKER_TLS_VERIFY=1" \
+  --env "DOCKER_CERT_PATH=/etc/ssl/docker" \
+  --label "container_group=infrastructure" \
+  --volume "/var/run/docker.sock:/var/run/docker.sock" \
+  --volume "/run/metadata:/run/metadata" \
+  --volume "/run/torcx:/run/torcx" \
+  --volume "/var/atlassian/bamboo:/var/atlassian/bamboo" \
+  --volume "/var/bamboo/artifacts:/var/atlassian/bamboo/artifacts" \
+  --volume "/var/bamboo/config/server.xml:/opt/atlassian/bamboo/conf/server.xml" \
+  --volume "/var/bamboo/config/seraph-config.xml:/opt/atlassian/bamboo/atlassian-bamboo/WEB-INF/classes/seraph-config.xml" \
+  --volume "/var/bamboo/config/crowd-integration-client-3.2.3.jar:/opt/atlassian/bamboo/atlassian-bamboo/WEB-INF/lib/crowd-integration-client-3.2.3.jar" \
+  --volume "/var/bamboo/config/login.ftl:/opt/atlassian/bamboo/atlassian-bamboo/login.ftl" \
+  --volume "/var/bamboo/certs/ca.pem:/etc/ssl/docker/ca.pem" \
+  --volume "/var/bamboo/certs/calculonc.pem:/etc/ssl/docker/calculonc.pem" \
+  --volume "/var/bamboo/certs/calculonc-key.pem:/etc/ssl/docker/calculonc-key.pem" \
+  --volume "/var/bamboo/ssh:/usr/sbin/.ssh" \
+  --volume "/etc/ssl/docker/momcorpdoop.pem:/etc/ssl/docker/cert.pem" \
+  --volume "/etc/ssl/docker/momcorpdoop-key.pem:/etc/ssl/docker/key.pem" \
+  --volume "/var/bamboo-tmp:/tmp" \
+  --user "root" \
+  --publish "8085:8085" \
+  --publish "127.0.0.1:8086:8086" \
+  --restart=no \
+  cptactionhank/atlassian-bamboo:6.5.0
+
+ExecStart=/usr/bin/docker start --attach "bamboo"
+
+ExecStartPost=-/bin/bash -c '\
+  until [ "$$(docker inspect -f {{.State.Running}} bamboo)" == "true" ]; do sleep 1; done; \
+  docker exec -t bamboo bash -c \'\
+    apk add --no-cache rsync sshpass libtool git-lfs shadow docker jq curl bash ca-certificates openssl ncurses coreutils python2 make gcc g++ libgcc linux-headers grep util-linux binutils findutils &&\
+    mkdir -p /root/.ssh && cp -r /usr/sbin/.ssh/* /root/.ssh/ &&\
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.0/install.sh | bash &&\
+    export NVM_DIR="$$HOME/.nvm" &&\
+    [ -s "$$NVM_DIR/nvm.sh" ] && \. "$$NVM_DIR/nvm.sh" --no-use &&\
+    nvm install -s 12\''
+
+ExecStartPost=-/bin/bash -c '\
+  docker exec -t bamboo bash -c \'\
+    cd /tmp && curl -Ls https://github.com/dustinblackman/phantomized/releases/download/2.1.1/dockerized-phantomjs.tar.gz | tar xz &&\
+    cp -R lib lib64 / &&\
+    cp -R usr/lib/x86_64-linux-gnu /usr/lib &&\
+    cp -R usr/share/fonts /usr/share &&\
+    cp -R etc/fonts /etc &&\
+    curl -k -Ls https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 | tar -jxf - &&\
+    cp phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/local/bin/phantomjs\''
+
+ExecStartPost=/bin/bash -c '\
+  docker exec -t bamboo bash -c \'\
+    jq -n "{\\"password\\":\\"iDd3UexH)tvxdLoc\\"}" | curl -s --request POST -d @- --url "http://vault.services.ruhmesmeile.local:8200/v1/auth/userpass/login/infrastructure" | jq --raw-output .auth.client_token > /opt/atlassian/bamboo/conf/vault_token\''
+
+ExecStop=/usr/bin/docker stop --time 30 "bamboo"
+
+[X-Fleet]
+MachineMetadata=role=doop
+
+# Auf dem Server ist es initial notwendig die Ordnerrechte exakt einzustellen. Interner User "daemon" muss r/w auf alles unter /var/atlassian/bamboo haben:
+#
+# Lokaler User "root":
+# $ docker exec -ti --user root bamboo bash
+#
+# Lokaler User "daemon":
+# $ docker exec -ti bamboo bash 
+#
+# Zusätzlich ist es mittlerweile notwendig, sshpass und rsync als Binary im Pfad verfügbar zu haben, dazu sind folgende Schritte notwendig:
+# local:$ ssh momcorphq
+# momcorphq:$ docker exec -ti --user root bamboo bash
+# bamboo:$ sed -i 's/main/main universe/g' /etc/apt/sources.list
+# bamboo:$ apt-get update
+# bamboo:$ apt-get install sshpass
+# bamboo:$ apt-get install rsync
+# 

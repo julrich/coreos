@@ -1,0 +1,18 @@
+[Unit]
+Description=Renew Vault token inside Bamboo, needed for builds and deployments
+
+Requires=docker.service
+Requires=bamboo.service
+
+After=docker.service
+After=bamboo.service
+
+[Service]
+Type=oneshot
+
+ExecStart=/bin/bash -x -c '\
+  docker exec -t bamboo bash -x -c \'\
+    jq -n "{\\"password\\":\\"iDd3UexH)tvxdLoc\\"}" | curl -s --request POST -d @- --url "http://vault.services.ruhmesmeile.local:8200/v1/auth/userpass/login/infrastructure" | jq --raw-output .auth.client_token > /opt/atlassian/bamboo/conf/vault_token\''
+
+[X-Fleet]
+MachineOf=bamboo.service

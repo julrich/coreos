@@ -1,0 +1,48 @@
+[Unit]
+Description=Container for performance measurement webpages, based on alpine nginx
+Documentation=https://hub.docker.com/_/nginx/
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+ExecStartPre=-/bin/bash -c '/usr/bin/systemctl set-environment SERVICE_ID=$(echo "%i" | sed -re "s/\\./-/g")'
+ExecStartPre=-/usr/bin/docker kill 'static-rocks-${SERVICE_ID}'
+ExecStartPre=-/usr/bin/docker rm 'static-rocks-${SERVICE_ID}'
+ExecStartPre=/usr/bin/docker pull nginx:mainline-alpine
+
+ExecStartPre=/bin/bash -c '\
+  echo "[SYSTEMD] Getting current project sources"; \
+  while read -r fullfile ; do \
+    echo "[SYSTEMD] Extracting file: $$fullfile"; \
+    BASE="/srv/source/performance"; \
+    VHOST="$$(echo $${fullfile##*/} | cut -f 1,2 -d \'.\' | cut -f 2 -d \'-\')"; \
+    PROJECTKEY="$$(echo $${fullfile##*/} | cut -f 1 -d \'.\' | cut -f 2 -d \'-\')"; \
+    DOMAIN="$$(echo $${fullfile##*/} | cut -f 3 -d \'.\' | cut -f 2 -d \'-\')"; \
+    mkdir -p $$BASE/$$VHOST; \
+    mkdir -p $$BASE/$$VHOST/result; \
+    tar -zxf "$$fullfile" -C $$BASE/$$VHOST/; \
+    find $$BASE/$$VHOST/result/ -maxdepth 1 -not -name '*$$DOMAIN*' -not -path $$BASE/$$VHOST/result/ -print0 | xargs -0 rm -rf --; \
+    tar --strip-components=4 -zxf "$$fullfile" -C $$BASE/$$VHOST/result/; \
+    echo "$$PROJECTKEY"\':$$apr1$$GvBzdmf.$$Eld/pvDX6FR8zkxNeXxlZ.\' > /srv/storage/config/nginx/data/htpasswd/$$VHOST.ruhmesmeile.rocks; \
+  done < <(find /srv/storage/artifacts/performance/%i -path \'*.performance.tar.gz\');'
+
+ExecStart=/usr/bin/docker run \
+  --name "static-rocks-${SERVICE_ID}" --rm \
+  --env "SERVICE_80_IGNORE=true" \
+  --env "SERVICE_443_NAME=static-rocks" \
+  --env "SERVICE_ID=${SERVICE_ID}" \
+  --env "VIRTUAL_HOST=%i.ruhmesmeile.rocks" \
+  --env "LOCATION_HOST=%i.ruhmesmeile.rocks" \
+  --env "LETSENCRYPT_HOST=%i.ruhmesmeile.rocks" \
+  --env "LETSENCRYPT_EMAIL=jonas.ulrich@ruhmesmeile.com" \
+  --label "container_group=performance" \
+  --volume "/srv/source/performance/%i/result:/usr/share/nginx/html:ro" \
+  nginx:mainline-alpine
+
+[X-Fleet]
+MachineMetadata=role=vds

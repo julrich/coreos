@@ -1,0 +1,5 @@
+{{- range $dir := lsdir "/sitespeedio/project" -}}
+{{- $custdir := printf "/sitespeedio/project/%s/url" $dir -}}{{- with get $custdir -}}
+{{.Value}}
+{{end -}}
+{{- end -}}

@@ -1,0 +1,45 @@
+[Unit]
+Description=OpenLDAP server for user management, single point of truth for Vault and Crowd
+Documentation=https://github.com/osixia/docker-openldap-backup
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+ExecStartPre=-/usr/bin/docker kill ldap
+ExecStartPre=-/usr/bin/docker rm ldap
+ExecStartPre=/usr/bin/docker pull osixia/openldap-backup:1.2.1
+
+ExecStart=/usr/bin/docker run \
+  --name "ldap" \
+  --env "SERVICE_389_NAME=ldap" \
+  --env "SERVICE_ID=%H" \
+  --env "HOSTNAME=%H.ldap.services.ruhmesmeile.local" \
+  --env "LDAP_ORGANISATION=ruhmesmeile GmbH" \
+  --env "LDAP_DOMAIN=ldap.services.ruhmesmeile.local" \
+  --env "LDAP_BASE_DN=dc=ldap,dc=services,dc=ruhmesmeile,dc=local" \
+  --env "LDAP_ADMIN_PASSWORD=follow-pidgin-tippy-poniard" \
+  --env "LDAP_CONFIG_PASSWORD=gangland-mania-sadly-loan" \
+  --env "LDAP_TLS=false" \
+  --env "LDAP_REPLICATION=true" \
+  --env "LDAP_REPLICATION_CONFIG_SYNCPROV=binddn=\"cn=admin,cn=config\" bindmethod=simple credentials=\"gangland-mania-sadly-loan\" searchbase=\"cn=config\" type=refreshAndPersist retry=\"60 +\" timeout=1" \
+  --env "LDAP_REPLICATION_DB_SYNCPROV=binddn=\"cn=admin,dc=ldap,dc=services,dc=ruhmesmeile,dc=local\" bindmethod=simple credentials=\"follow-pidgin-tippy-poniard\" searchbase=\"dc=ldap,dc=services,dc=ruhmesmeile,dc=local\" type=refreshAndPersist interval=00:00:00:10 retry=\"60 +\" timeout=1" \
+  --env "LDAP_REPLICATION_HOSTS=#PYTHON2BASH:['ldap://momcorpas.ldap.services.ruhmesmeile.local','ldap://momcorpofro.ldap.services.ruhmesmeile.local','momcorpuhat.ldap.services.ruhmesmeile.local']" \
+  --env "LDAP_BACKUP_CONFIG_CRON_EXP=0 4 * * *" \
+  --env "LDAP_BACKUP_DATA_CRON_EXP=0 4 * * *" \
+  --env "LDAP_BACKUP_TTL=15" \
+  --label "container_group=infrastructure" \
+  --volume "/var/ldap/data:/var/lib/ldap" \
+  --volume "/var/ldap/config:/etc/ldap/slapd.d" \
+  osixia/openldap-backup:1.2.1
+
+ExecStop=-/usr/bin/docker stop ldap
+
+[X-Fleet]
+MachineMetadata=role=%i
+
+# FQN Login Admin: cn=admin,dc=ldap,dc=services,dc=ruhmesmeile,dc=local

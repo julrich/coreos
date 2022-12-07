@@ -1,0 +1,10 @@
+groups:
+- name: alert.rules_typo3
+  rules:
+  - alert: solr_offline
+    expr: probe_http_status_code{job="solr-blackbox-exporter"} != 200
+    for: 2m
+    annotations:
+      identifier: '{{ $labels.instance }}'
+      description: '{{$labels.job}} on {{$labels.instance}} is not ready.'
+      summary: Solr instance offline

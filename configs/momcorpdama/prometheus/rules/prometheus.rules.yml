@@ -1,0 +1,25 @@
+groups:
+- name: prometheus.rules
+  rules:
+  - record: container_cpu_system_seconds_total:sum_rate_1m:by_group
+    expr: sum(rate(container_cpu_system_seconds_total[1m])) BY (group)
+  - record: container_cpu_user_seconds_total:sum_rate_1m:by_group
+    expr: sum(rate(container_cpu_user_seconds_total[1m])) BY (group)
+  - record: container_cpu_usage_seconds_total:sum_rate_1m:by_group
+    expr: sum(rate(container_cpu_usage_seconds_total[1m])) BY (group)
+  - record: etcd_store_reads_total:sum_rate_1m:by_action
+    expr: sum(rate(etcd_store_reads_total{job="etcd"}[1m])) BY (action)
+  - record: etcd_store_writes_total:max_rate_1m:by_action
+    expr: max(rate(etcd_store_writes_total{job="etcd"}[1m])) BY (action)
+  - record: etcd_store_watch_requests_total:sum_rate_1m
+    expr: sum(rate(etcd_store_watch_requests_total{job="etcd"}[1m]))
+  - record: etcd_store_watchers:sum
+    expr: sum(etcd_store_watchers{job="etcd"})
+  - record: etcd_proxy_handled_total:sum_rate_1m:by_method
+    expr: sum(rate(etcd_proxy_handled_total{job="etcd"}[1m])) BY (method)
+  - record: etcd_proxy_handling_duration_seconds_bucket:get:histogram_quantile
+    expr: histogram_quantile(0.9, sum(increase(etcd_proxy_handling_duration_seconds_bucket{job="etcd",method="GET"}[5m]))
+      BY (le)) * 1000
+  - record: etcd_proxy_handling_duration_seconds_bucket:no_get:histogram_quantile
+    expr: histogram_quantile(0.9, sum(increase(etcd_proxy_handling_duration_seconds_bucket{job="etcd",method!="GET"}[5m]))
+      BY (le)) * 1000

@@ -1,0 +1,48 @@
+[Unit]
+Description=Generate TYPO3 rm-extension matrix, based on satis and rm-dist composer.lock
+Documentation=https://github.com/ruhmesmeile/satis-extension-matrix
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+TimeoutSec=300s
+
+ExecStartPre=-/usr/bin/docker kill 'satis-extension-matrix'
+ExecStartPre=-/usr/bin/docker rm 'satis-extension-matrix' -v
+ExecStartPre=/usr/bin/docker pull ruhmesmeile/satis-extension-matrix:latest
+
+ExecStart=/usr/bin/docker run \
+  --name "satis-extension-matrix" --rm \
+  --env "SERVICE_3000_NAME=satis-extension-matrix" \
+  --env "SERVICE_ID=%i" \
+  --env "VIRTUAL_HOST=matrix.ruhmesmeile.tools" \
+  --env "VIRTUAL_PORT=3000" \
+  --env "LETSENCRYPT_HOST=matrix.ruhmesmeile.tools" \
+  --env "LETSENCRYPT_EMAIL=jonas.ulrich@ruhmesmeile.com" \
+  --env "BITBUCKET_USERNAME=infrastructure" \
+  --env "BITBUCKET_PASSWORD=cluthosluswe" \
+  --env "BITBUCKET_HOST=bitbucket.ruhmesmeile.tools" \
+  --env "BITBUCKET_PORT=7999" \
+  --env "SATIS_USERNAME=satis" \
+  --env "SATIS_PASSWORD=betatester" \
+  --env "SATIS_HOST=satis.ruhmesmeile.tools" \
+  --env "BASE_DISTRIBUTION_NAME=rm-dist" \
+  --env "HOMEPAGE_CACHE_TTL=0" \
+  --env "FETCH_CACHE_TTL=0" \
+  --label "container_group=typo3" \
+  --volume "/etc/ssl/etcd/calculonc-key.pem:/etc/ssl/etcd/calculonc-key.pem" \
+  --volume "/etc/ssl/etcd/calculonc.pem:/etc/ssl/etcd/calculonc.pem" \
+  --volume "/etc/ssl/etcd/ca.pem:/etc/ssl/etcd/ca.pem" \
+  --publish "1337:3000" \
+  ruhmesmeile/satis-extension-matrix:latest
+
+ExecStartPost=-/bin/bash -c '\
+  echo "matrix"\':$$apr1$$GvBzdmf.$$Eld/pvDX6FR8zkxNeXxlZ.\' > /srv/storage/config/nginx/data/htpasswd/matrix.ruhmesmeile.tools'
+
+[X-Fleet]
+MachineMetadata=role=fdc

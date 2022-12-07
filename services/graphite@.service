@@ -1,0 +1,49 @@
+[Unit]
+Description=Database for usage and performance characteristics
+Documentation=https://github.com/graphite-project/docker-graphite-statsd
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+TimeoutSec=300s
+
+ExecStartPre=-/bin/bash -c '\
+  if [ "%i" == "dama" ]; then \
+    /usr/bin/systemctl set-environment VIRTUAL_HOST=graphite.ruhmesmeile.tools; \
+    /usr/bin/systemctl set-environment LETSENCRYPT_HOST=graphite.ruhmesmeile.tools; \
+  else \
+    /usr/bin/systemctl set-environment VIRTUAL_HOST=graphite-%i.ruhmesmeile.tools; \
+    /usr/bin/systemctl set-environment LETSENCRYPT_HOST=graphite-%i.ruhmesmeile.tools; \
+  fi'
+ExecStartPre=-/usr/bin/docker kill graphite
+ExecStartPre=-/usr/bin/docker rm graphite
+ExecStartPre=/usr/bin/docker pull graphiteapp/graphite-statsd:1.1.2-1
+
+ExecStart=/usr/bin/docker run --rm \
+  --name "graphite" \
+  --env "SERVICE_80_NAME=graphite" \
+  --env "SERVICE_2003_NAME=graphite-api" \
+  --env "SERVICE_ID=%H" \
+  --env "VIRTUAL_HOST" \
+  --env "VIRTUAL_PORT=80" \
+  --env "LETSENCRYPT_HOST" \
+  --env "LETSENCRYPT_EMAIL=jonas.ulrich@ruhmesmeile.com" \
+  --label "container_group=performance" \
+  --volume "/var/graphite/data/storage:/opt/graphite/storage" \
+  --volume "/var/graphite/config/carbon.conf:/opt/graphite/conf/carbon.conf" \
+  --volume "/var/graphite/config/storage-aggregation.conf:/opt/graphite/conf/storage-aggregation.conf" \
+  --volume "/var/graphite/config/storage-schemas.conf:/opt/graphite/conf/storage-schemas.conf" \
+  --publish "8095:80" \
+  --publish "2003:2003" \
+  graphiteapp/graphite-statsd:1.1.2-1
+
+ExecStop=-/usr/bin/docker stop graphite
+
+[X-Fleet]
+Global=true
+MachineMetadata=role=%i

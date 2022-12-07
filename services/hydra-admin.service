@@ -1,0 +1,30 @@
+[Unit]
+Description=Ory Hydra container - OpenID Connect certified OAuth2 Server (this gives an accessible URL to Ory Hydra admin interface on port 4445; hydraadmin.ruhmesmeile.tools)
+
+Requires=hydra.service
+
+After=hydra.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+ExecStartPre=-/usr/bin/docker kill 'hydraadmin'
+ExecStartPre=-/usr/bin/docker rm 'hydraadmin' -v
+ExecStartPre=/usr/bin/docker pull alpine/socat:1.0.3
+
+ExecStart=/usr/bin/docker run \
+  --name "hydraadmin" --rm \
+  --env "VIRTUAL_HOST=hydraadmin.ruhmesmeile.tools,hydraadmin3.ruhmesmeile.tools" \
+  --env "VIRTUAL_PORT=4445" \
+  --env "LETSENCRYPT_HOST=hydraadmin.ruhmesmeile.tools,hydraadmin3.ruhmesmeile.tools" \
+  --env "LETSENCRYPT_EMAIL=jonas.ulrich@ruhmesmeile.com" \
+  --label "container_group=typo3" \
+  --expose "4445" \
+  alpine/socat:1.0.3 \
+    TCP-LISTEN:4445,fork TCP:hydra.services.ruhmesmeile.local:4445
+
+ExecStop=/usr/bin/docker stop 'hydraadmin'
+
+[X-Fleet]
+MachineOf=hydra.service

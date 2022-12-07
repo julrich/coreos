@@ -1,0 +1,28 @@
+[Unit]
+Description=Send out sms alerts
+Documentation=https://github.com/messagebird/sachet
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+ExecStartPre=-/usr/bin/docker kill sachet
+ExecStartPre=-/usr/bin/docker rm sachet
+ExecStartPre=/usr/bin/docker pull messagebird/sachet:0.2.3
+
+ExecStart=/usr/bin/docker run \
+  --name "sachet" \
+  --env "SERVICE_9876_NAME=sachet" \
+  --env "SERVICE_ID=%H" \
+  --label "container_group=monitoring" \
+  --volume "/var/sachet/config:/etc/sachet" \
+  messagebird/sachet:0.2.3
+
+ExecStop=-/usr/bin/docker stop sachet
+
+[X-Fleet]
+MachineMetadata=role=dama

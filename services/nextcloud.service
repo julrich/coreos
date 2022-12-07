@@ -1,0 +1,54 @@
+[Unit]
+Description=Nextcloud container
+Documentation=https://github.com/nextcloud/docker
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+TimeoutSec=300s
+
+ExecStartPre=/usr/bin/docker pull nextcloud:17
+ExecStartPre=-/usr/bin/docker kill nextcloud
+ExecStartPre=-/usr/bin/docker rm nextcloud -v
+ExecStart=/usr/bin/docker run \
+  --name "nextcloud" --rm \
+  --env "SERVICE_NAME=nextcloud" \
+  --env "SERVICE_ID=%H" \
+  --env "VIRTUAL_HOST=cloud.ruhmesmeile.tools" \
+  --env "VIRTUAL_PORT=9000" \
+  --env "LETSENCRYPT_HOST=cloud.ruhmesmeile.tools" \
+  --env "LETSENCRYPT_EMAIL=jonas.ulrich@ruhmesmeile.com" \
+  --env "POSTGRES_DB=rmnextcloud" \
+  --env "POSTGRES_USER=nextcloud" \
+  --env "POSTGRES_PASSWORD=b2oMhqpqFMmTk" \
+  --env "POSTGRES_HOST=postgres.services.ruhmesmeile.local" \
+  --env "NEXTCLOUD_ADMIN_USER=rumermay" \
+  --env "NEXTCLOUD_ADMIN_PASSWORD=xkaZZVRsg6xQF" \
+  --env "NEXTCLOUD_TRUSTED_DOMAINS=cloud.ruhmesmeile.tools" \
+  --volume "/var/nextcloud/data:/var/www/html" \
+  --volume "/var/nextcloud/config/apps:/var/www/html/custom_apps" \
+  --volume "/var/nextcloud/config/config:/var/www/html/config" \
+  --label "container_group=infrastructure" \
+  nextcloud:17
+
+ExecStartPost=-/bin/bash -c '\
+  echo "client_max_body_size 10G;" > /srv/storage/config/nginx/data/vhost.d/cloud.ruhmesmeile.tools_location;'
+
+[X-Fleet]
+MachineMetadata=role=bil
+
+# # TODO Nextcloud:
+#
+# * Security Warnings fixen (https://cloud.ruhmesmeile.tools/settings/admin/overview)
+# * Background jobs > Cron (https://cloud.ruhmesmeile.tools/settings/admin)
+# * Hostname Container (Warning bei Start)
+# * Atlassian Icons in Nextcloud
+#
+#
+# # TODO Generell:
+# * Upgrade PostgreSQL

@@ -1,0 +1,64 @@
+groups:
+  ruhmesmeile:
+  - infrastructure
+  - mgunser
+  - lmestel
+  - hgoebel
+  - nkonegen
+  - edridiger
+  - fleven
+  - sstehle
+  - nisaki
+  - julrich
+  - byordanov
+
+  '@ruhmesmeile':
+  - mnowak
+
+  '@taktsoft':
+  - ibarisic
+  - mmicke
+  - pwoltering
+  - mkerp
+  - droetzel
+  - aguluzade
+  - araisl
+  - ngojayeva
+  - atrakowski
+  - rrafeh
+  - araisl
+
+  '@swo':
+  - atrakowski
+  - mmicke
+  - slust
+  - kleidel
+  - pwoltering
+  - swostage
+
+  '@noweda':
+  - mradeloff
+
+  '@next':
+  - mnowak
+  - vschneider
+  - adietz
+  - slust
+  - nextstage
+
+  '@blendedlearning':
+  - mkerp
+  - mmicke
+  - mnowak
+  - vschneider
+  - adietz
+  - blendedlearningstage
+  - ibarisic
+
+  '@mylife':
+  - dley
+
+  '@nice':
+  - gcruz
+  - ksimon
+  - nicestage

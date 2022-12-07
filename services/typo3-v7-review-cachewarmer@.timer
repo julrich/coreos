@@ -1,0 +1,8 @@
+[Unit]
+Description=Run cache warming for service at least every 24 hours
+
+[Timer]
+OnUnitActiveSec=24h
+
+[X-Fleet]
+MachineOf=typo3-v7-review-cachewarmer@%i.service

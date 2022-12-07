@@ -1,0 +1,11 @@
+[Unit]
+Description=Path watcher for autodeploy of static artifacts for staging branches
+
+[Path]
+DirectoryNotEmpty=/srv/artifacts/static/review
+
+[Install]
+WantedBy=multi-user.target
+
+[X-Fleet]
+MachineOf=static-review-autodeploy.service

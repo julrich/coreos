@@ -1,0 +1,93 @@
+[Unit]
+Description=XtraDB MySQL Cluster Node
+Documentation=https://github.com/Percona-Lab/percona-xtradb-cluster-docker
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+TimeoutStartSec=0
+
+ExecStartPre=/bin/bash -c '\
+  mkdir -p /var/xtradb-node/ssl &&\
+  cp /etc/ssl/etcd/calculon* /etc/ssl/etcd/ca.pem /var/xtradb-node/ssl/ &&\
+  chown 1001:1001 -R /var/xtradb-node/ssl'
+ExecStartPre=-/usr/bin/docker kill xtradb-node
+ExecStartPre=-/usr/bin/docker rm xtradb-node
+ExecStartPre=/usr/bin/docker pull percona/percona-xtradb-cluster:5.7
+
+ExecStart=/usr/bin/docker run \
+  --name "xtradb-node" \
+  --env "SERVICE_3306_NAME=xtradb-node" \
+  --env "SERVICE_4444_NAME=xtradb-statetransfer" \
+  --env "SERVICE_4567_NAME=xtradb-group" \
+  --env "SERVICE_4568_NAME=xtradb-incrementalstatetransfer" \
+  --env "SERVICE_ID=%H" \
+  --env "MYSQL_ROOT_PASSWORD=BXMzpQ2neehQF7" \
+  --env "DISCOVERY_SERVICE=%H.etcd.services.ruhmesmeile.local:2379" \
+  --env "CLUSTER_NAME=rm-mysql" \
+  --env "CLUSTERCHECK_USER=rmmonitor" \
+  --env "CLUSTERCHECK_PASSWORD=3TVHqTJa3iqTiF" \
+  --env "XTRABACKUP_PASSWORD=2BhY7awbLmPjoz" \
+  --env "NODE_NAME=%H" \
+  --label "container_group=typo3" \
+  --volume "/var/xtradb-node/config/clustercheckcron:/usr/bin/clustercheckcron" \
+  --volume "/var/xtradb-node/config/entrypoint.sh:/entrypoint.sh" \
+  --volume "/var/xtradb-node/config/node.cnf:/etc/mysql/node.cnf" \
+  --volume "/var/xtradb-node/data:/var/lib/mysql" \
+  --volume "/var/xtradb-node/ssl/ca.pem:/etc/docker/ssl/ca.pem" \
+  --volume "/var/xtradb-node/ssl/calculonc-key.pem:/etc/docker/ssl/calculonc-key.pem" \
+  --volume "/var/xtradb-node/ssl/calculonc.pem:/etc/docker/ssl/calculonc.pem" \
+  --publish "3306:3306" \
+  --publish "4444:4444" \
+  --publish "4567:4567" \
+  --publish "4568:4568" \
+  percona/percona-xtradb-cluster:5.7
+
+ExecStop=-/usr/bin/docker stop xtradb-node
+
+[X-Fleet]
+MachineMetadata=role=%i
+
+# In case of a lost majority, e.g.:
+#
+#  * all machines had to reboot,
+#  * an error crashed the cluster,
+#  * etc
+#
+# the node instances will have to be (re-)started one after another. They shouldn't lose data, but the
+# cluster they will form will be a new one, as bootstrapping from a safe place is probably not possible.
+#
+# The first node will have to be started on a machine, where the environment variable XTRADB_NODE_OPTS
+# is set to '--wsrep-new-cluster'. This will instruct the node, to bootstrap the new cluster. Additionally
+# on that node you will have to set 'safe_to_bootstrap' to 1 in '/var/xtradb-node/data/grastate.dat'.
+#
+# Which node you select for your first one shouldn't matter, but you should give each node 5 minutes for
+# starting up, before starting the next one.
+#
+# Detailed steps:
+#
+# local/$: ssh momcorpofro
+# momcorpofro/$: sudo su
+# momcorpofro/$: sed -i 's/safe_to_bootstrap: 0/safe_to_bootstrap: 1/g' /var/xtradb-node/data/grastate.dat
+# momcorpofro/$: export XTRADB_NODE_OPTS=--wsrep-new-cluster
+# momcorpofro/$: exit
+# momcorpofro/$: exit
+# local/$: fleetctl start mysql-xtradb-node@ofro.service
+# local/$: fleetctl start mysql-xtradb-node@uhat.service
+# local/$: fleetctl start mysql-xtradb-node@as.service
+#
+# Additionally you will have to restart proxysql and re-add the newly started cluster:
+#
+# local/$: ssh momcorpfdc
+# momcorpfdc/$: sudo su
+# momcorpfdc/$: systemctl restart mysql-xtradb-proxysql.service
+# momcorpfdc/$: docker exec -ti xtradb-proxysql bash
+# momcorpfdc:proxysql/$: ./usr/bin/add_cluster_nodes.sh
+
+
+
+# GRANT REPLICATION CLIENT ON *.* TO monitor@'%' IDENTIFIED BY 'c7eBACaWCHDzV8';
+# GRANT PROCESS ON *.* TO monitor@localhost IDENTIFIED BY 'c7eBACaWCHDzV8';
+# monitor:c7eBACaWCHDzV8

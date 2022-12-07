@@ -1,0 +1,11 @@
+[Unit]
+Description=Path watcher for autodeploy of TYPO3 (v7) artifacts for master branches
+
+[Path]
+DirectoryNotEmpty=/srv/artifacts/typo3-v7/review
+
+[Install]
+WantedBy=multi-user.target
+
+[X-Fleet]
+MachineMetadata=role=fdc

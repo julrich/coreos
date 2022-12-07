@@ -1,0 +1,41 @@
+[Unit]
+Description=Redis metrics exporter for TYPO3 (v7) master webpages redis
+Documentation=https://github.com/oliver006/redis_exporter
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+EnvironmentFile=/etc/environment
+Environment="ETCD_TLSKEY=/etc/ssl/etcd/calculonc-key.pem"
+Environment="ETCD_TLSPEM=/etc/ssl/etcd/calculonc.pem"
+Environment="ETCD_CACERT=/etc/ssl/etcd/ca.pem"
+
+ExecStartPre=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/review/%i/status/redis-exporter/current "starting" > /dev/null'
+ExecStartPre=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/review/%i/status/redis-exporter/starting "$(date +%%s)" > /dev/null'
+
+ExecStartPre=-/usr/bin/docker kill 'typo3-v7-review-redis-exporter-%i'
+ExecStartPre=-/usr/bin/docker rm 'typo3-v7-review-redis-exporter-%i' -v
+ExecStartPre=/usr/bin/docker pull oliver006/redis_exporter:v0.12
+
+ExecStart=/usr/bin/docker run \
+  --name "typo3-v7-review-redis-exporter-%i" --rm \
+  --env "SERVICE_9121_NAME=typo3-v7-review-redis-exporter" \
+  --env "SERVICE_ID=%i" \
+  --env "REDIS_ADDR=redis://%i.typo3-v7-review-redis.services.ruhmesmeile.local" \
+  --env "REDIS_ALIAS=%i" \
+  --label "container_group=typo3" \
+  oliver006/redis_exporter:v0.12
+
+ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/review/%i/status/redis-exporter/current "started" > /dev/null'
+ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/review/%i/status/redis-exporter/started "$(date +%%s)" > /dev/null'
+
+ExecStopPost=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/review/%i/status/redis-exporter/current "stopped $EXIT_STATUS" > /dev/null'
+ExecStopPost=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/review/%i/status/redis-exporter/stopped "$(date +%%s)" > /dev/null'
+
+[X-Fleet]
+MachineOf=typo3-v7-review-redis@%i.service

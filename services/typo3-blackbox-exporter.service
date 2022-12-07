@@ -1,0 +1,27 @@
+[Unit]
+Description=Metrics exporter for TYPO3 webpages
+Documentation=https://github.com/prometheus/blackbox_exporter
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+ExecStartPre=-/usr/bin/docker kill 'typo3-blackbox-exporter'
+ExecStartPre=-/usr/bin/docker rm 'typo3-blackbox-exporter' -v
+ExecStartPre=/usr/bin/docker pull prom/blackbox-exporter:v0.14.0
+
+ExecStart=/usr/bin/docker run \
+  --name "typo3-blackbox-exporter" --rm \
+  --env "SERVICE_9115_NAME=typo3-blackbox-exporter" \
+  --env "SERVICE_ID=%i" \
+  --expose "9115" \
+  --label "container_group=typo3" \
+  --volume "/srv/storage/config/typo3/exporter/config.yml:/etc/blackbox_exporter/config.yml" \
+  prom/blackbox-exporter:v0.14.0
+
+[X-Fleet]
+MachineMetadata=role=fdc

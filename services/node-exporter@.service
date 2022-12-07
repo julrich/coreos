@@ -1,0 +1,27 @@
+[Unit]
+Description=Node Exporter
+Documentation=https://github.com/prometheus/node_exporter
+
+Requires=docker.service
+Requires=flanneld.service
+
+After=docker.service
+After=flanneld.service
+
+[Service]
+Restart=always
+RestartSec=30s
+TimeoutStartSec=360s
+
+User=root
+EnvironmentFile=/etc/environment
+
+ExecStartPre=-/bin/bash -c 'sleep 120 && /usr/bin/systemctl set-environment FLANNEL_HOST=$(ip addr show dev docker0 |grep "inet " |sed -re "s/.+ inet ([0-9\\.]+).+/\\1/g")'
+
+ExecStart=/opt/bin/node_exporter -collectors.enabled "conntrack,diskstats,entropy,filefd,filesystem,loadavg,mdadm,meminfo,netdev,netstat,sockstat,stat,textfile,time,uname,vmstat" -web.listen-address "${FLANNEL_HOST}:9100"
+
+ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /skydns/local/ruhmesmeile/services/node-exporter/%H "{\\"host\\": \\"$(ip addr show dev docker0 |grep "inet " |sed -re "s/.+ inet ([0-9\\.]+).+/\\1/g")\\",\\"port\\":9100}"'
+
+[X-Fleet]
+Global=true
+MachineMetadata=role=%i

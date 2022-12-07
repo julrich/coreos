@@ -1,0 +1,33 @@
+[Unit]
+Description=Console to manage OpenLDAP server deployment, see ldap@.service
+Documentation=https://github.com/osixia/docker-phpLDAPadmin
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+ExecStartPre=-/usr/bin/docker kill ldap-console
+ExecStartPre=-/usr/bin/docker rm ldap-console
+ExecStartPre=/usr/bin/docker pull osixia/phpldapadmin:0.7.1
+
+ExecStart=/usr/bin/docker run \
+  --name "ldap-console" \
+  --env "SERVICE_80_NAME=ldap-console" \
+  --env "SERVICE_ID=%H" \
+  --env "VIRTUAL_HOST=ldap.ruhmesmeile.tools" \
+  --env "VIRTUAL_PORT=80" \
+  --env "LETSENCRYPT_HOST=ldap.ruhmesmeile.tools" \
+  --env "LETSENCRYPT_EMAIL=jonas.ulrich@ruhmesmeile.com" \
+  --env "PHPLDAPADMIN_LDAP_HOSTS=ldap.services.ruhmesmeile.local" \
+  --env "PHPLDAPADMIN_HTTPS=false" \
+  --label "container_group=infrastructure" \
+  osixia/phpldapadmin:0.7.1
+
+ExecStop=-/usr/bin/docker stop ldap-console
+
+[X-Fleet]
+MachineMetadata=role=fdc

@@ -1,0 +1,76 @@
+[Unit]
+Description=Autodeploy of TYPO3 master artifacts
+
+[Service]
+Type=oneshot
+
+EnvironmentFile=/etc/environment
+Environment="ETCD_TLSKEY=/etc/ssl/etcd/calculonc-key.pem"
+Environment="ETCD_TLSPEM=/etc/ssl/etcd/calculonc.pem"
+Environment="ETCD_CACERT=/etc/ssl/etcd/ca.pem"
+
+ExecStart=/bin/bash -c '\
+  INS=false; \
+  PK=""; \
+  BASE=/srv/storage/artifacts/typo3/review; \
+  ARTIFACT=/srv/artifacts/typo3/review; \
+  while [ $$(find $$ARTIFACT -path \'*.sources.tar.gz\' | wc -l) -eq 0 ] ; do sleep 2; done; \
+  echo "Moving TYPO3 project sources to storage:"; \
+  while read -r fullfile ; do \
+    echo Moving file: "$$fullfile"; \
+    until ! err=$$(lsof $$fullfile 2>&1 > /dev/null); do sleep 1; done; \
+    if [ -z "$$err" ]; then \
+      PK="$$(echo $${fullfile##*/} | cut -f 1 -d \'.\' | cut -f 2 -d \'-\')"; \
+      mkdir -p $$BASE/$$PK; \
+      rm -rf $$BASE/$$PK/*; \
+      mv "$$fullfile" $$BASE/$$PK/; \
+    fi; \
+  done < <(find $$ARTIFACT -path \'*.sources.tar.gz\'); \
+  systemctl set-environment PROJECTKEY=$$PK; \
+  etcdctl --no-sync set /ruhmesmeile/projects/typo3/review/${PROJECTKEY}/status/typo3/current "deploying" > /dev/null; \
+  etcdctl --no-sync set /ruhmesmeile/projects/typo3/review/${PROJECTKEY}/status/typo3/started "$(date +%%s)" > /dev/null; \
+  echo "Moving TYPO3 files and SQL to storage:"; \
+  while \
+    ! [ $$(find $$ARTIFACT -path \'*.files.tar.gz\' -o -path \'*.sql.bz2\' | wc -l) -eq 0 ] && \
+    ! [ $$(find $$ARTIFACT -path \'*.files.tar.gz\' -o -path \'*.sql.bz2\' | wc -l) -eq 3 ]; \
+    do \
+      sleep 2; \
+  done; \
+  while read -r fullfile ; do \
+    echo Moving file: "$$fullfile"; \
+    until ! err=$$(lsof $$fullfile 2>&1 > /dev/null); do sleep 1; done; \
+    if [ -z "$$err" ]; then \
+      INS=true; \
+      mv $$fullfile $$BASE/$$PK/; \
+    fi; \
+  done < <(find $$ARTIFACT -path \'*.files.tar.gz\' -o -path \'*.sql.bz2\'); \
+  echo "Create Install Trigger (true|false-pk): $$INS-$$PK"; \
+  if [ "$$INS" = true ] && ! [ -z "$$PK" ]; \
+  then \
+    touch $$BASE/$$PK/INSTALL; \
+  fi; \
+  /opt/bin/fleetctl destroy typo3-review-redis@$$PK.service || true; \
+  /opt/bin/fleetctl destroy typo3-review-install@$$PK.service || true; \
+  /opt/bin/fleetctl destroy typo3-review@$$PK.service || true; \
+  sleep 15s; \
+  /opt/bin/fleetctl start typo3-review-redis@$$PK.service; \
+  /opt/bin/fleetctl start typo3-review@$$PK.service;'
+
+ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/review/${PROJECTKEY}/status/typo3/current "deployed" > /dev/null'
+ExecStartPost=/bin/bash -c 'etcdctl --no-sync set /ruhmesmeile/projects/typo3/review/${PROJECTKEY}/status/typo3/started "$(date +%%s)" > /dev/null'
+
+[Install]
+WantedBy=multi-user.target
+
+[X-Fleet]
+MachineMetadata=role=fdc
+
+# Sorry some variables had to be shortened, but we're running into the max limit for ExecStart in systemd / fleet (~2000 chars).
+#
+# Variables:
+#
+# * PK = projectkey
+# * TR = TYPO3 .review service name: typo3-review
+# * BASE = project type base directory (technology: typo3, environment: review)
+# * INS = flag to determine if a fresh install is supposed to happen
+# * ARTIFACT = location of artifacts for project (technology typo3, environment: review)

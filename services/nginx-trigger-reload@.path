@@ -1,0 +1,16 @@
+[Unit]
+Description=Path watcher for nginx restart after config changes
+
+Requires=docker.service
+
+After=docker.service
+
+[Path]
+PathExists=/srv/config/nginx/reload/RELOAD
+
+[Install]
+WantedBy=multi-user.target
+
+[X-Fleet]
+Global=true
+MachineMetadata=role=%i

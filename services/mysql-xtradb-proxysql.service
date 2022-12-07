@@ -1,0 +1,163 @@
+[Unit]
+Description=XtraDB MySQL Cluster Proxy
+Documentation=https://github.com/sysown/proxysql
+
+Requires=docker.service
+
+After=docker.service
+
+[Service]
+Restart=always
+RestartSec=30s
+
+ExecStartPre=-/usr/bin/docker kill xtradb-proxysql
+ExecStartPre=-/usr/bin/docker rm xtradb-proxysql
+ExecStartPre=/usr/bin/docker pull ruhmesmeile/proxysql-docker:latest
+
+ExecStart=/usr/bin/docker run \
+  --name "xtradb-proxysql" \
+  --env "SERVICE_3306_NAME=mysql" \
+  --env "SERVICE_6032_NAME=mysql-management" \
+  --env "SERVICE_ID=%H" \
+  --env "CLUSTER_NAME=rm-mysql" \
+  --env "DISCOVERY_SERVICE=%H.etcd.services.ruhmesmeile.local:2379" \
+  --env "MYSQL_ROOT_PASSWORD=BXMzpQ2neehQF7" \
+  --env "MYSQL_PROXY_USER=rm-proxy" \
+  --env "MYSQL_PROXY_PASSWORD=oxidNyzuuU37cE" \
+  --env "PROXYSQL_ADMIN_PASSWORD=ZGpsbsveTjY69c" \
+  --label "container_group=typo3" \
+  --volume "/var/xtradb-proxy/data:/var/lib/proxysql" \
+  --volume "/var/xtradb-proxy/config/proxysql.cnf:/etc/proxysql.cnf" \
+  --volume "/var/xtradb-proxy/config/proxysql-admin.cnf:/etc/proxysql-admin.cnf" \
+  --volume "/etc/ssl/etcd/ca.pem:/etc/docker/ssl/ca.pem" \
+  --volume "/etc/ssl/etcd/calculonc-key.pem:/etc/docker/ssl/calculonc-key.pem" \
+  --volume "/etc/ssl/etcd/calculonc.pem:/etc/docker/ssl/calculonc.pem" \
+  --publish "3306:3306" \
+  --publish "6032:6032" \
+  ruhmesmeile/proxysql-docker:latest
+
+ExecStop=-/usr/bin/docker stop xtradb-proxysql
+
+[X-Fleet]
+MachineMetadata=role=fdc
+Conflicts=mysql-xtradb-node.service
+
+# ### General:
+#
+# * Information about all this can be found here: https://www.percona.com/doc/percona-xtradb-cluster/LATEST/howtos/proxysql.html
+
+
+# ### max_allowed_packet / Fileuploads:
+#
+# After a restart, one may have to re-add 'max_allowed_packet' to the global options
+# of proxysql for bigger database imports to work.
+#
+# see also: https://github.com/sysown/proxysql/wiki/Global-variables#mysql-max_allowed_packet
+#
+# Detailed steps:
+# 
+# local/$: ssh momcorpfdc
+# momcorpfdc/$: sudo su
+# momcorpfdc/$: docker exec -ti xtradb-proxysql bash
+# momcorpfdc:proxysql/$: mysql -h mysql-management.services.ruhmesmeile.local -u admin -pZGpsbsveTjY69c -P 6032
+# mysql (proxysql)> SET mysql-max_allowed_packet=256*1024*1024;
+# mysql (proxysql)> LOAD MYSQL VARIABLES TO RUNTIME;
+# mysql (proxysql)> SAVE MYSQL VARIABLES TO DISK;
+
+
+# ### Scheduler:
+#
+# To check on nodes, and update their status in proxysql, the scheduler has to be added and running.
+#
+# Check with:
+#
+# local/$: ssh momcorpfdc
+# momcorpfdc/$: sudo su
+# momcorpfdc/$: docker exec -ti xtradb-proxysql bash
+# momcorpfdc:proxysql/$: mysql -h mysql-management.services.ruhmesmeile.local -u admin -pZGpsbsveTjY69c -P 6032
+# mysql (proxysql)> SELECT * FROM runtime_scheduler\G
+#
+# If this is empty, you have to (re-)add the entry manually:
+#
+# local/$: ssh momcorpfdc
+# momcorpfdc/$: sudo su
+# momcorpfdc/$: docker exec -ti xtradb-proxysql bash
+# momcorpfdc:proxysql/$: mysql -h mysql-management.services.ruhmesmeile.local -u admin -pZGpsbsveTjY69c -P 6032
+# mysql (proxysql)> INSERT INTO scheduler(id,interval_ms,filename,arg1,arg2,arg3,arg4,arg5) VALUES (1,'10000','/usr/bin/proxysql_galera_checker','10','10','3','1','/var/lib/proxysql/proxysql_galera_checker.log');
+# mysql (proxysql)> LOAD SCHEDULER TO RUNTIME;
+
+
+# ### Check which servers are managed by proxysql right now:
+#
+# local/$: ssh momcorpfdc
+# momcorpfdc/$: sudo su
+# momcorpfdc/$: docker exec -ti xtradb-proxysql bash
+# momcorpfdc:proxysql/$: mysql -h mysql-management.services.ruhmesmeile.local -u admin -pZGpsbsveTjY69c -P 6032
+# mysql (proxysql)> SELECT hostgroup_id,hostname,port,status,comment FROM mysql_servers;
+#
+# Initial configuration was done by:
+# proxysql-admin --config-file=/etc/proxysql-admin.cnf --node-check-interval=5000 --mode=loadbal --enable 
+
+
+# ### Delete previously failed instances from proxysql (not automatic right now):
+#
+# Check with previous manual, if there are obsolete entries in mysql_servers. To remove one, and potentially fix new ones replacing the old one:
+#
+# local/$: ssh momcorpfdc
+# momcorpfdc/$: sudo su
+# momcorpfdc/$: docker exec -ti xtradb-proxysql bash
+# momcorpfdc:proxysql/$: mysql -h mysql-management.services.ruhmesmeile.local -u admin -pZGpsbsveTjY69c -P 6032
+# mysql (proxysql)> DELETE FROM mysql_servers WHERE hostname = '10.1.X.X';
+# mysql (proxysql)> UPDATE mysql_servers SET comment='READWRITE' WHERE hostname='10.1.X.X';
+
+
+# ### Enable Query logging:
+# 
+# To enable query logging (for all queries), execute the following:
+# 
+# local/$: ssh momcorpfdc
+# momcorpfdc/$: sudo su
+# momcorpfdc/$: docker exec -ti xtradb-proxysql bash
+# momcorpfdc:proxysql/$: mysql -h mysql-management.services.ruhmesmeile.local -u admin -pZGpsbsveTjY69c -P 6032
+# mysql (proxysql)> SET mysql-eventslog_filename='queries.log';
+# mysql (proxysql)> LOAD MYSQL VARIABLES TO RUNTIME;
+# mysql (proxysql)> SAVE MYSQL VARIABLES TO DISK;
+# mysql (proxysql)> INSERT INTO mysql_query_rules (rule_id, active, match_digest, log, apply) VALUES (1,1,'.',1,0);
+# mysql (proxysql)> LOAD MYSQL QUERY RULES TO RUNTIME;
+# mysql (proxysql)> SAVE MYSQL QUERY RULES TO DISK;
+
+
+# ### Test if Query logging is working (should display a lot of hits for the added query rule):
+#
+# local/$: ssh momcorpfdc
+# momcorpfdc/$: sudo su
+# momcorpfdc/$: docker exec -ti xtradb-proxysql bash
+# momcorpfdc:proxysql/$: mysql -h mysql-management.services.ruhmesmeile.local -u admin -pZGpsbsveTjY69c -P 6032
+# mysql (proxysql)> SELECT rule_id,match_digest,log,hits from runtime_mysql_query_rules LEFT JOIN stats_mysql_query_rules USING (rule_id) WHERE rule_id=1;
+#
+# To disable again:
+# 
+# local/$: ssh momcorpfdc
+# momcorpfdc/$: sudo su
+# momcorpfdc/$: docker exec -ti xtradb-proxysql bash
+# momcorpfdc:proxysql/$: mysql -h mysql-management.services.ruhmesmeile.local -u admin -pZGpsbsveTjY69c -P 6032
+# mysql (proxysql)> SET mysql-eventslog_filename='';
+# mysql (proxysql)> LOAD MYSQL VARIABLES TO RUNTIME;
+# mysql (proxysql)> SAVE MYSQL VARIABLES TO DISK;
+# mysql (proxysql)> DELETE FROM mysql_query_rules WHERE rule_id=1;
+# mysql (proxysql)> LOAD MYSQL QUERY RULES TO RUNTIME;
+# mysql (proxysql)> SAVE MYSQL QUERY RULES TO DISK;
+
+
+# ### Test performance of MySQL-Cluster (sysbench)
+#
+# see also: https://www.percona.com/blog/2017/01/06/millions-queries-per-second-postgresql-and-mysql-peaceful-battle-at-modern-demanding-workloads/
+#
+# local/$: ssh momcorpfdc
+# momcorpfdc/$: sudo su
+# momcorpfdc/$: docker exec -ti xtradb-proxysql bash
+# momcorpfdc:proxysql/$: mysql -h momcorpuhat.xtradb-node.services.ruhmesmeile.local -u root -pBXMzpQ2neehQF7 -P 3306 -e "CREATE DATABASE sysbench;"
+# momcorpfdc:proxysql/$: apt-get update
+# momcorpfdc:proxysql/$: apt-get install -y sysbench
+# momcorpfdc:proxysql/$: sysbench --report-interval=5 --num-threads=4 --num-requests=0 --max-time=20 --test=/usr/share/sysbench/tests/include/oltp_legacy/oltp.lua --mysql-user='rmproxy' --mysql-password='oxidNyzuuU37cE' --oltp-table-size=10000 --mysql-host=127.0.0.1 --mysql-port=3306 prepare
+# momcorpfdc:proxysql/$: sysbench --report-interval=5 --num-threads=4 --num-requests=0 --max-time=20 --test=/usr/share/sysbench/tests/include/oltp_legacy/oltp.lua --mysql-user='rmproxy' --mysql-password='oxidNyzuuU37cE' --oltp-table-size=10000 --mysql-host=127.0.0.1 --mysql-port=3306 run
